@@ -22,7 +22,6 @@ HTMLFieldSetElement::HTMLFieldSetElement(
     : nsGenericHTMLFormControlElement(std::move(aNodeInfo),
                                       FormControlType::Fieldset),
       mElements(nullptr),
-      mFirstLegend(nullptr),
       mInvalidElementsCount(0) {
   // <fieldset> is always barred from constraint validation.
   SetBarredFromConstraintValidation(true);
@@ -40,7 +39,7 @@ HTMLFieldSetElement::~HTMLFieldSetElement() {
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(HTMLFieldSetElement,
                                    nsGenericHTMLFormControlElement, mValidity,
-                                   mElements)
+                                   mElements, mFirstLegend)
 
 NS_IMPL_ISUPPORTS_CYCLE_COLLECTION_INHERITED(HTMLFieldSetElement,
                                              nsGenericHTMLFormControlElement,
@@ -120,6 +119,7 @@ void HTMLFieldSetElement::InsertChildBefore(nsIContent* aChild,
                                             nsIContent* aBeforeThis,
                                             bool aNotify, ErrorResult& aRv) {
   bool firstLegendHasChanged = false;
+  RefPtr<nsIContent> oldFirstLegend = mFirstLegend;
 
   if (aChild->IsHTMLElement(nsGkAtoms::legend)) {
     if (!mFirstLegend) {
@@ -144,6 +144,7 @@ void HTMLFieldSetElement::InsertChildBefore(nsIContent* aChild,
   nsGenericHTMLFormControlElement::InsertChildBefore(aChild, aBeforeThis,
                                                      aNotify, aRv);
   if (aRv.Failed()) {
+    mFirstLegend = oldFirstLegend;
     return;
   }
 
