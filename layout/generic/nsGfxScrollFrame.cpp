@@ -2489,9 +2489,12 @@ void nsHTMLScrollFrame::ScrollToWithOrigin(nsPoint aScrollPosition,
   if (aParams.IsInstant()) {
     // Asynchronous scrolling is not allowed, so we'll kill any existing
     // async-scrolling process and do an instant scroll.
+    AutoWeakFrame weakFrame(this);
     CompleteAsyncScroll(GetScrollPosition(), range, std::move(snapTargetIds),
                         aParams.mOrigin);
-    mApzSmoothScrollDestination = Nothing();
+    if (weakFrame.IsAlive()) {
+      mApzSmoothScrollDestination = Nothing();
+    }
     return;
   }
 
