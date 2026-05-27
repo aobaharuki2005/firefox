@@ -1523,15 +1523,9 @@ void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aMouseOrPointerEvent) {
     // due to its corresponding BrowserChild wasn't ready to handle it, we have
     // to resend it when the BrowserChild is ready.
     mIsMouseEnterIntoWidgetEventSuppressed = false;
-    WidgetMouseEvent mouseEnterIntoWidgetEvent(aMouseOrPointerEvent.IsTrusted(),
-                                               eMouseEnterIntoWidget,
-                                               aMouseOrPointerEvent.mWidget);
-    mouseEnterIntoWidgetEvent.AssignMouseEventData(aMouseOrPointerEvent, true,
-                                                   false);
-    // Ensure to clear unnecessary members as an eMouseEnterIntoWidget event.
-    mouseEnterIntoWidgetEvent.mSpecifiedEventType = nullptr;
-    mouseEnterIntoWidgetEvent.mContextMenuTrigger =
-        WidgetMouseEvent::ContextMenuTrigger::eNormal;
+    WidgetMouseEvent mouseEnterIntoWidgetEvent =
+        WidgetMouseEvent::MakeLossyCopy(aMouseOrPointerEvent,
+                                        eMouseEnterIntoWidget);
     DebugOnly<bool> ret = isInputPriorityEventEnabled
                               ? SendRealMouseEnterExitWidgetEvent(
                                     mouseEnterIntoWidgetEvent, guid, blockId)

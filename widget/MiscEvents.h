@@ -27,7 +27,7 @@ class PBrowserChild;
  * mozilla::WidgetContentCommandEvent
  ******************************************************************************/
 
-class WidgetContentCommandEvent : public WidgetGUIEvent {
+class WidgetContentCommandEvent final : public WidgetGUIEvent {
  public:
   virtual WidgetContentCommandEvent* AsContentCommandEvent() override {
     return this;
@@ -40,6 +40,10 @@ class WidgetContentCommandEvent : public WidgetGUIEvent {
         mOnlyEnabledCheck(aOnlyEnabledCheck),
         mSucceeded(false),
         mIsEnabled(false) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetContentCommandEvent,
+                                                    eContentCommandEventClass,
+                                                    eGUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     // This event isn't an internal event of any DOM event.
@@ -116,7 +120,7 @@ class WidgetContentCommandEvent : public WidgetGUIEvent {
  * XXX Should be |WidgetChromeCommandEvent|?
  ******************************************************************************/
 
-class WidgetCommandEvent : public WidgetGUIEvent {
+class WidgetCommandEvent final : public WidgetGUIEvent {
  public:
   virtual WidgetCommandEvent* AsCommandEvent() override { return this; }
 
@@ -144,6 +148,10 @@ class WidgetCommandEvent : public WidgetGUIEvent {
    */
   WidgetCommandEvent()
       : WidgetCommandEvent(false, nullptr, nullptr, nullptr, nullptr) {}
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetCommandEvent,
+                                                    eCommandEventClass,
+                                                    eGUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eCommandEventClass,

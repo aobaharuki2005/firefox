@@ -102,9 +102,7 @@ const char* ToChar(EventMessage aEventMessage);
  * Event class IDs
  */
 
-using EventClassIDType = uint8_t;
-
-enum EventClassID : EventClassIDType {
+enum EventClassID : uint8_t {
 // The event class name will be:
 //   eBasicEventClass for WidgetEvent
 //   eFooEventClass for WidgetFooEvent or InternalFooEvent
@@ -115,7 +113,7 @@ enum EventClassID : EventClassIDType {
 
 #undef NS_EVENT_CLASS
 #undef NS_ROOT_EVENT_CLASS
-  eEventClassID_MaxValue
+  eEventClassUninitialized,
 };
 
 const char* ToChar(EventClassID aEventClassID);

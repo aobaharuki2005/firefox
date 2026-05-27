@@ -435,6 +435,51 @@ class WidgetEventTime {
  * mozilla::WidgetEvent
  ******************************************************************************/
 
+/**
+ * WidgetEvent and its subclasses manages its concrete type with mClass value
+ * for the performance because As*Event() is a virtual method call, so, it may
+ * be too expensive if the path is a hot path and needs to handle multiple
+ * WidgetEvent subclasses. Therefore, we need to assert mClass value to detect a
+ * bug. Ideally, it's cleaner if we do that in each copy/move constructor and
+ * assignment operators. However, doing that makes us to define user-defined
+ * copy/move constructors even if the behavior is the default one. That's too
+ * bad if the class has a lot of members. Therefore, we assert mClass value at
+ * destruction instead. The following macros defines the assertions and virtual
+ * destructor in debug builds.
+ */
+#ifdef DEBUG
+/**
+ * Assert mClass value to be aEventClassID and set mClass value to
+ * aBaseEventClassID for the same assertion in the base class's destructor.
+ *
+ * If you see the following assertion, you make a lossy copy/move (lost the data
+ * of members of the subclass) implicitly. That may be a bug. If it's
+ * intentional, you should make MakeLossyCopy() or MakeLossyMove() method like
+ * WidgetMouseEvent to clarify doing that.
+ */
+#  define NS_ASSERT_EVENT_CLASS_ID(aEventClassID, aBaseEventClassID)          \
+    if (MOZ_LIKELY(mClass != eEventClassUninitialized)) {                     \
+      MOZ_ASSERT(                                                             \
+          mClass == (aEventClassID),                                          \
+          "It's now allowed to initialize event class instance with copying " \
+          "or moving from a subclass instance without adjusting mClass");     \
+      mClass = aBaseEventClassID;                                             \
+    }
+/**
+ * Define the virtual destructor of aClassType and assert/set mClass value. See
+ * NS_ASSERT_EVENT_CLASS_ID for the detail.
+ */
+#  define NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(     \
+      aClassType, aEventClassID, aBaseEventClassID)              \
+    virtual ~aClassType() {                                      \
+      NS_ASSERT_EVENT_CLASS_ID(aEventClassID, aBaseEventClassID) \
+    }
+#else
+#  define NS_ASSERT_EVENT_CLASS_ID(aEventClassID, aBaseEventClassID)
+#  define NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE( \
+      aClassType, aEventClassID, aBaseEventClassID)
+#endif
+
 class WidgetEvent : public WidgetEventTime {
  private:
   void SetDefaultCancelableAndBubbles() {
@@ -522,7 +567,27 @@ class WidgetEvent : public WidgetEventTime {
               const WidgetEventTime* aTime = nullptr)
       : WidgetEvent(aIsTrusted, aMessage, eBasicEventClass, aTime) {}
 
-  MOZ_COUNTED_DTOR_VIRTUAL(WidgetEvent)
+  /**
+   * WidgetEvent requires the virtual destructor in any builds because
+   * WidgetEvent or its subclass may be managed by `UniquePtr` whose template
+   * parameter may be different from the actual class of the instance. E.g.,
+   * UniquePtr<WidgetMouseEvent> may manage a WidgetPointerEvent instance.
+   *
+   * NOTE: All subclasses of WidgetEvent must have virtual destructor in debug
+   * builds and they should check whether mClass value is the proper value for
+   * the class and set it to another value corresponding to the base class.
+   * Then, we can detect the following cases which do not adjust mClass value
+   * properly:
+   * 1. Copy or move constructor is used with an instance of a subclass.
+   * 2. Assignment operator is used with an instance of a subclass.
+   *
+   * To implement that, use NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE or
+   * NS_ASSERT_EVENT_CLASS_ID macro defined before this class's declaration.
+   */
+  virtual ~WidgetEvent() {
+    MOZ_COUNT_DTOR(WidgetEvent);
+    NS_ASSERT_EVENT_CLASS_ID(eBasicEventClass, eEventClassUninitialized);
+  }
 
   WidgetEvent(const WidgetEvent& aOther) : WidgetEventTime(aOther) {
     MOZ_COUNT_CTOR(WidgetEvent);
@@ -559,7 +624,7 @@ class WidgetEvent : public WidgetEventTime {
     return result;
   }
 
-  EventClassID mClass;
+  EventClassID mClass = eEventClassUninitialized;
   EventMessage mMessage;
   // Relative to the widget of the event, or if there is no widget then it is
   // in screen coordinates. Not modified by layout code.
@@ -1072,6 +1137,15 @@ class WidgetGUIEvent : public WidgetEvent {
       : WidgetEvent(aIsTrusted, aMessage, eGUIEventClass, aTime),
         mWidget(aWidget) {}
 
+  WidgetGUIEvent(const WidgetGUIEvent&) = default;
+  WidgetGUIEvent(WidgetGUIEvent&&) = default;
+  WidgetGUIEvent& operator=(const WidgetGUIEvent&) = default;
+  WidgetGUIEvent& operator=(WidgetGUIEvent&&) = default;
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetGUIEvent,
+                                                    eGUIEventClass,
+                                                    eBasicEventClass)
+
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eGUIEventClass,
                "Duplicate() must be overridden by sub class");
@@ -1223,6 +1297,15 @@ class WidgetInputEvent : public WidgetGUIEvent {
       : WidgetGUIEvent(aIsTrusted, aMessage, aWidget, eInputEventClass, aTime),
         mModifiers(0) {}
 
+  WidgetInputEvent(const WidgetInputEvent&) = default;
+  WidgetInputEvent(WidgetInputEvent&&) = default;
+  WidgetInputEvent& operator=(const WidgetInputEvent&) = default;
+  WidgetInputEvent& operator=(WidgetInputEvent&&) = default;
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetInputEvent,
+                                                    eInputEventClass,
+                                                    eGUIEventClass)
+
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eInputEventClass,
                "Duplicate() must be overridden by sub class");
@@ -1350,6 +1433,15 @@ class InternalUIEvent : public WidgetGUIEvent {
         mDetail(0),
         mCausedByUntrustedEvent(aEventCausesThisEvent &&
                                 !aEventCausesThisEvent->IsTrusted()) {}
+
+  InternalUIEvent(const InternalUIEvent&) = default;
+  InternalUIEvent(InternalUIEvent&&) = default;
+  InternalUIEvent& operator=(const InternalUIEvent&) = default;
+  InternalUIEvent& operator=(InternalUIEvent&&) = default;
+
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(InternalUIEvent,
+                                                    eUIEventClass,
+                                                    eGUIEventClass)
 
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eUIEventClass,

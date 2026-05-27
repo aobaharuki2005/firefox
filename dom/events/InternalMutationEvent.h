@@ -25,6 +25,10 @@ class InternalMutationEvent : public WidgetEvent {
     mFlags.mCancelable = false;
   }
 
+  NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(InternalMutationEvent,
+                                                    eMutationEventClass,
+                                                    eBasicEventClass);
+
   virtual WidgetEvent* Duplicate() const override {
     MOZ_ASSERT(mClass == eMutationEventClass,
                "Duplicate() must be overridden by sub class");

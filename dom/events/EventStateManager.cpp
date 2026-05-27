@@ -2650,7 +2650,8 @@ void EventStateManager::MaybeFirePointerCancel(WidgetInputEvent* aEvent) {
   nsEventStatus status = nsEventStatus_eIgnore;
 
   if (WidgetMouseEvent* aMouseEvent = aEvent->AsMouseEvent()) {
-    WidgetPointerEvent event(*aMouseEvent);
+    WidgetPointerEvent event =
+        WidgetPointerEvent::MakeCopyFromMouseEvent(*aMouseEvent);
     PointerEventHandler::InitPointerEventFromMouse(&event, aMouseEvent,
                                                    ePointerCancel);
 
@@ -5586,7 +5587,8 @@ static LayoutDeviceIntPoint GetWindowClientRectCenter(nsIWidget* aWidget) {
 
 void EventStateManager::GeneratePointerEnterExit(EventMessage aMessage,
                                                  WidgetMouseEvent* aEvent) {
-  WidgetPointerEvent pointerEvent(*aEvent);
+  WidgetPointerEvent pointerEvent =
+      WidgetPointerEvent::MakeCopyFromMouseEvent(*aEvent);
   pointerEvent.mMessage = aMessage;
   GenerateMouseEnterExit(&pointerEvent);
 }
@@ -6398,7 +6400,7 @@ nsresult EventStateManager::HandleMiddleClickPaste(
     if (aMouseOrPointerEvent->mClass == ePointerEventClass) {
       MOZ_ASSERT(aMouseOrPointerEvent->AsPointerEvent());
       pointerEvent.emplace(
-          static_cast<WidgetPointerEvent&>(*aMouseOrPointerEvent));
+          WidgetPointerEvent::MakeCopyFromMouseEvent(*aMouseOrPointerEvent));
     } else {
       MOZ_ASSERT(!aMouseOrPointerEvent->AsPointerEvent());
       MOZ_ASSERT(!aMouseOrPointerEvent->AsDragEvent());

@@ -34,7 +34,7 @@ template <>
 struct ParamTraits<mozilla::EventClassID>
     : public ContiguousEnumSerializer<
           mozilla::EventClassID, mozilla::EventClassID(0),
-          mozilla::EventClassID::eEventClassID_MaxValue> {};
+          mozilla::EventClassID::eEventClassUninitialized> {};
 
 template <>
 struct ParamTraits<mozilla::BaseEventFlags> {

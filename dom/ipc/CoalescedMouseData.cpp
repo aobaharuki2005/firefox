@@ -61,7 +61,7 @@ void CoalescedMouseData::Coalesce(const WidgetMouseEvent& aMouseOrPointerEvent,
     // DOM events when content calls PointerEvent::getCoalescedEvents.
     WidgetPointerEvent* event =
         mCoalescedInputEvent->mCoalescedWidgetEvents->mEvents.AppendElement(
-            aMouseOrPointerEvent);
+            WidgetPointerEvent::MakeCopyFromMouseEvent(aMouseOrPointerEvent));
 
     event->mMessage = ePointerMove;
     event->mPressure = aMouseOrPointerEvent.ComputeMouseButtonPressure();
