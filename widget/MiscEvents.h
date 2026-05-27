@@ -29,9 +29,7 @@ class PBrowserChild;
 
 class WidgetContentCommandEvent final : public WidgetGUIEvent {
  public:
-  virtual WidgetContentCommandEvent* AsContentCommandEvent() override {
-    return this;
-  }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, ContentCommandEvent);
 
   WidgetContentCommandEvent(bool aIsTrusted, EventMessage aMessage,
                             nsIWidget* aWidget, bool aOnlyEnabledCheck = false)
@@ -122,7 +120,7 @@ class WidgetContentCommandEvent final : public WidgetGUIEvent {
 
 class WidgetCommandEvent final : public WidgetGUIEvent {
  public:
-  virtual WidgetCommandEvent* AsCommandEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, CommandEvent);
 
  protected:
   WidgetCommandEvent(bool aIsTrusted, nsAtom* aEventType, nsAtom* aCommand,

@@ -190,10 +190,11 @@ struct ParamTraits<mozilla::WidgetWheelEvent> {
   using baseParamTraits = ParamTraits<mozilla::WidgetMouseEventBase>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    NS_WARNING_ASSERTION(aParam.mClass == mozilla::eWheelEventClass,
-                         fmt::format("got {}, but expected eWheelEventClass",
-                                     mozilla::ToChar(aParam.mClass))
-                             .c_str());
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eWheelEventClass,
+        nsPrintfCString("got %s, but expected eWheelEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eWheelEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mDeltaX);
@@ -304,10 +305,11 @@ struct ParamTraits<mozilla::WidgetMouseEvent> {
   //   path to do that.  Therefore, this flag is not required for now.
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    NS_WARNING_ASSERTION(aParam.mClass == mozilla::eMouseEventClass,
-                         fmt::format("got {}, but expected eMouseEventClass",
-                                     mozilla::ToChar(aParam.mClass))
-                             .c_str());
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eMouseEventClass,
+        nsPrintfCString("got %s, but expected eMouseEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eMouseEventClass);
     WriteForDerivedClass(aWriter, aParam);
   }
@@ -352,9 +354,9 @@ struct ParamTraits<mozilla::WidgetDragEvent> {
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
     NS_WARNING_ASSERTION(aParam.mClass == mozilla::eDragEventClass,
-                         fmt::format("got {}, but expected eDragEventClass",
-                                     mozilla::ToChar(aParam.mClass))
-                             .c_str());
+                         nsPrintfCString("got %s, but expected eDragEventClass",
+                                         mozilla::ToChar(aParam.mClass))
+                             .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eDragEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mUserCancelled);
@@ -377,10 +379,11 @@ struct ParamTraits<mozilla::WidgetPointerEvent> {
   using baseParamTraits = ParamTraits<mozilla::WidgetMouseEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    NS_WARNING_ASSERTION(aParam.mClass == mozilla::ePointerEventClass,
-                         fmt::format("got {}, but expected ePointerEventClass",
-                                     mozilla::ToChar(aParam.mClass))
-                             .c_str());
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::ePointerEventClass,
+        nsPrintfCString("got %s, but expected ePointerEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::ePointerEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mWidth);
@@ -405,10 +408,11 @@ struct ParamTraits<mozilla::WidgetTouchEvent> {
   using baseParamTraits = ParamTraits<mozilla::WidgetInputEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    NS_WARNING_ASSERTION(aParam.mClass == mozilla::eTouchEventClass,
-                         fmt::format("got {}, but expected eTouchEventClass",
-                                     mozilla::ToChar(aParam.mClass))
-                             .c_str());
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eTouchEventClass,
+        nsPrintfCString("got %s, but expected eTouchEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eTouchEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mInputSource);
@@ -531,10 +535,11 @@ struct ParamTraits<mozilla::WidgetKeyboardEvent> {
   using baseParamTraits = ParamTraits<mozilla::WidgetInputEvent>;
 
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
-    NS_WARNING_ASSERTION(aParam.mClass == mozilla::eKeyboardEventClass,
-                         fmt::format("got {}, but expected eKeyboardEventClass",
-                                     mozilla::ToChar(aParam.mClass))
-                             .c_str());
+    NS_WARNING_ASSERTION(
+        aParam.mClass == mozilla::eKeyboardEventClass,
+        nsPrintfCString("got %s, but expected eKeyboardEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eKeyboardEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mKeyNameIndex);
@@ -685,9 +690,9 @@ struct ParamTraits<mozilla::WidgetCompositionEvent> {
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
     NS_WARNING_ASSERTION(
         aParam.mClass == mozilla::eCompositionEventClass,
-        fmt::format("got {}, but expected eCompositionEventClass",
-                    mozilla::ToChar(aParam.mClass))
-            .c_str());
+        nsPrintfCString("got %s, but expected eCompositionEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eCompositionEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mData);
@@ -748,9 +753,9 @@ struct ParamTraits<mozilla::WidgetSelectionEvent> {
   static void Write(MessageWriter* aWriter, const paramType& aParam) {
     NS_WARNING_ASSERTION(
         aParam.mClass == mozilla::eSelectionEventClass,
-        fmt::format("got {}, but expected eSelectionEventClass",
-                    mozilla::ToChar(aParam.mClass))
-            .c_str());
+        nsPrintfCString("got %s, but expected eSelectionEventClass",
+                        mozilla::ToChar(aParam.mClass))
+            .get());
     MOZ_DIAGNOSTIC_ASSERT(aParam.mClass == mozilla::eSelectionEventClass);
     baseParamTraits::WriteForDerivedClass(aWriter, aParam);
     WriteParam(aWriter, aParam.mOffset);

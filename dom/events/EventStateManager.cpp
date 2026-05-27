@@ -172,7 +172,7 @@ static bool IsSelectingLink(nsIFrame* aTargetFrame) {
 }
 
 static UniquePtr<WidgetMouseEvent> CreateMouseOrPointerWidgetEvent(
-    WidgetMouseEvent* aMouseEvent, EventMessage aMessage,
+    const WidgetMouseEvent* aMouseEvent, EventMessage aMessage,
     EventTarget* aRelatedTarget);
 
 /**
@@ -5113,7 +5113,7 @@ class MOZ_STACK_CLASS ESMEventCB : public EventDispatchingCallback {
 };
 
 static UniquePtr<WidgetMouseEvent> CreateMouseOrPointerWidgetEvent(
-    WidgetMouseEvent* aMouseEvent, EventMessage aMessage,
+    const WidgetMouseEvent* aMouseEvent, EventMessage aMessage,
     EventTarget* aRelatedTarget) {
   // This method does not support creating a mouse/pointer button change event
   // because of no data about the changing state.
@@ -5129,19 +5129,21 @@ static UniquePtr<WidgetMouseEvent> CreateMouseOrPointerWidgetEvent(
              aMessage == eMouseEnterIntoWidget ||
              aMessage == eMouseExitFromWidget);
 
-  WidgetPointerEvent* sourcePointer = aMouseEvent->AsPointerEvent();
   UniquePtr<WidgetMouseEvent> newEvent;
-  if (sourcePointer) {
+  if (IsPointerEventMessage(aMessage)) {
     AUTO_PROFILER_LABEL("CreateMouseOrPointerWidgetEvent", OTHER);
 
-    WidgetPointerEvent* newPointerEvent = new WidgetPointerEvent(
-        aMouseEvent->IsTrusted(), aMessage, aMouseEvent->mWidget);
-    newPointerEvent->mIsPrimary = sourcePointer->mIsPrimary;
-    newPointerEvent->mWidth = sourcePointer->mWidth;
-    newPointerEvent->mHeight = sourcePointer->mHeight;
-    newPointerEvent->mInputSource = sourcePointer->mInputSource;
-
-    newEvent = WrapUnique(newPointerEvent);
+    newEvent = MakeUnique<WidgetPointerEvent>(aMouseEvent->IsTrusted(),
+                                              aMessage, aMouseEvent->mWidget);
+    if (const WidgetPointerEvent* const sourcePointerEvent =
+            aMouseEvent->AsPointerEvent()) {
+      WidgetPointerEvent* const newPointerEvent =
+          static_cast<WidgetPointerEvent*>(newEvent.get());
+      newPointerEvent->mIsPrimary = sourcePointerEvent->mIsPrimary;
+      newPointerEvent->mWidth = sourcePointerEvent->mWidth;
+      newPointerEvent->mHeight = sourcePointerEvent->mHeight;
+      // Not assigning mFromTouchEvent
+    }
   } else {
     newEvent = MakeUnique<WidgetMouseEvent>(aMouseEvent->IsTrusted(), aMessage,
                                             aMouseEvent->mWidget,
@@ -5157,6 +5159,8 @@ static UniquePtr<WidgetMouseEvent> CreateMouseOrPointerWidgetEvent(
   newEvent->mRelatedTarget = aRelatedTarget;
   newEvent->mRefPoint = aMouseEvent->mRefPoint;
   newEvent->mModifiers = aMouseEvent->mModifiers;
+  newEvent->mInputSource = aMouseEvent->mInputSource;
+  newEvent->pointerId = aMouseEvent->pointerId;
   // NOTE: If you need to change this if-expression, you need to update
   // WidgetMouseEventBase::ComputeMouseButtonPressure() too.
   if (!aMouseEvent->mFlags.mDispatchedAtLeastOnce &&
@@ -5168,8 +5172,9 @@ static UniquePtr<WidgetMouseEvent> CreateMouseOrPointerWidgetEvent(
     // Note that we don't need to do this if the input source does not support
     // hover state because a WPT check the behavior (see below) and the other
     // browsers pass the test even though this is inconsistent behavior.
-    newEvent->mButton =
-        sourcePointer ? MouseButton::eNotPressed : MouseButton::ePrimary;
+    newEvent->mButton = newEvent->mClass == ePointerEventClass
+                            ? MouseButton::eNotPressed
+                            : MouseButton::ePrimary;
     if (aMouseEvent->IsPressingButton()) {
       // If the source event has not been dispatched into the DOM yet, we
       // need to remove the flag which is being pressed.
@@ -5208,10 +5213,6 @@ static UniquePtr<WidgetMouseEvent> CreateMouseOrPointerWidgetEvent(
     newEvent->mButtons = aMouseEvent->mButtons;
     newEvent->mPressure = aMouseEvent->mPressure;
   }
-
-  newEvent->mInputSource = aMouseEvent->mInputSource;
-  newEvent->pointerId = aMouseEvent->pointerId;
-
   return newEvent;
 }
 

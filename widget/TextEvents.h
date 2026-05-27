@@ -191,7 +191,7 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
         mEditCommandsForRichTextEditorInitialized(false) {}
 
  public:
-  WidgetKeyboardEvent* AsKeyboardEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, KeyboardEvent);
 
   WidgetKeyboardEvent(bool aIsTrusted, EventMessage aMessage,
                       nsIWidget* aWidget,
@@ -924,7 +924,7 @@ class WidgetCompositionEvent final : public WidgetGUIEvent {
   WidgetCompositionEvent() : mOriginalMessage(eVoidEvent) {}
 
  public:
-  virtual WidgetCompositionEvent* AsCompositionEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, CompositionEvent);
 
   WidgetCompositionEvent(bool aIsTrusted, EventMessage aMessage,
                          nsIWidget* aWidget,
@@ -1035,9 +1035,7 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
   }
 
  public:
-  virtual WidgetQueryContentEvent* AsQueryContentEvent() override {
-    return this;
-  }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, QueryContentEvent);
 
   WidgetQueryContentEvent(bool aIsTrusted, EventMessage aMessage,
                           nsIWidget* aWidget)
@@ -1430,7 +1428,7 @@ class WidgetSelectionEvent final : public WidgetGUIEvent {
         mReason(nsISelectionListener::NO_REASON) {}
 
  public:
-  virtual WidgetSelectionEvent* AsSelectionEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, SelectionEvent);
 
   WidgetSelectionEvent(bool aIsTrusted, EventMessage aMessage,
                        nsIWidget* aWidget)
@@ -1479,9 +1477,7 @@ class WidgetSelectionEvent final : public WidgetGUIEvent {
 class InternalEditorInputEvent final : public InternalUIEvent {
  public:
   InternalEditorInputEvent() = delete;
-  virtual InternalEditorInputEvent* AsEditorInputEvent() override {
-    return this;
-  }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Internal, EditorInputEvent);
 
   InternalEditorInputEvent(bool aIsTrusted, EventMessage aMessage,
                            nsIWidget* aWidget = nullptr,
@@ -1546,7 +1542,7 @@ class InternalLegacyTextEvent final : public InternalUIEvent {
  public:
   InternalLegacyTextEvent() = delete;
 
-  virtual InternalLegacyTextEvent* AsLegacyTextEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Internal, LegacyTextEvent);
 
   InternalLegacyTextEvent(bool aIsTrusted, EventMessage aMessage,
                           nsIWidget* aWidget = nullptr,

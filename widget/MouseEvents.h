@@ -160,7 +160,7 @@ class WidgetMouseEventBase : public WidgetInputEvent {
   WidgetMouseEventBase& operator=(WidgetMouseEventBase&&) = default;
 
  public:
-  virtual WidgetMouseEventBase* AsMouseEventBase() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, MouseEventBase);
 
   NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetMouseEventBase,
                                                     eMouseEventBaseClass,
@@ -323,7 +323,7 @@ class WidgetMouseEvent : public WidgetMouseEventBase,
 #endif
 
  public:
-  virtual WidgetMouseEvent* AsMouseEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, MouseEvent);
 
   WidgetMouseEvent(bool aIsTrusted, EventMessage aMessage, nsIWidget* aWidget,
                    Reason aReason = eReal,
@@ -520,7 +520,7 @@ class WidgetDragEvent final : public WidgetMouseEvent {
         mInHTMLEditorEventListener(false) {}
 
  public:
-  virtual WidgetDragEvent* AsDragEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, DragEvent);
 
   WidgetDragEvent(bool aIsTrusted, EventMessage aMessage, nsIWidget* aWidget,
                   const WidgetEventTime* aTime = nullptr)
@@ -595,7 +595,7 @@ class WidgetMouseScrollEvent : public WidgetMouseEventBase {
   WidgetMouseScrollEvent() : mDelta(0), mIsHorizontal(false) {}
 
  public:
-  virtual WidgetMouseScrollEvent* AsMouseScrollEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, MouseScrollEvent);
 
   WidgetMouseScrollEvent(bool aIsTrusted, EventMessage aMessage,
                          nsIWidget* aWidget,
@@ -674,7 +674,7 @@ class WidgetWheelEvent : public WidgetMouseEventBase {
         mDeltaValuesHorizontalizedForDefaultHandler(false) {}
 
  public:
-  virtual WidgetWheelEvent* AsWheelEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, WheelEvent);
 
   WidgetWheelEvent(bool aIsTrusted, EventMessage aMessage, nsIWidget* aWidget,
                    const WidgetEventTime* aTime = nullptr)
@@ -908,7 +908,7 @@ class WidgetPointerEvent final : public WidgetMouseEvent {
   WidgetPointerEvent() = default;
 
  public:
-  virtual WidgetPointerEvent* AsPointerEvent() override { return this; }
+  NS_DEFINE_AS_EVENT_OVERRIDE(Widget, PointerEvent);
 
   WidgetPointerEvent(bool aIsTrusted, EventMessage aMsg, nsIWidget* w,
                      const WidgetEventTime* aTime)
