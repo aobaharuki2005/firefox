@@ -6290,23 +6290,23 @@ nsresult EventStateManager::DispatchClickEvents(
 }
 
 nsresult EventStateManager::HandleMiddleClickPaste(
-    PresShell* aPresShell, WidgetMouseEvent* aMouseEvent,
+    PresShell* aPresShell, WidgetMouseEvent* aMouseOrPointerEvent,
     nsEventStatus* aStatus, EditorBase* aEditorBase) {
   MOZ_ASSERT(aPresShell);
-  MOZ_ASSERT(aMouseEvent);
-  MOZ_ASSERT((aMouseEvent->mMessage == ePointerAuxClick &&
-              aMouseEvent->mButton == MouseButton::eMiddle) ||
-             EventCausesClickEvents(*aMouseEvent));
+  MOZ_ASSERT(aMouseOrPointerEvent);
+  MOZ_ASSERT((aMouseOrPointerEvent->mMessage == ePointerAuxClick &&
+              aMouseOrPointerEvent->mButton == MouseButton::eMiddle) ||
+             EventCausesClickEvents(*aMouseOrPointerEvent));
   MOZ_ASSERT(aStatus);
   MOZ_ASSERT(*aStatus != nsEventStatus_eConsumeNoDefault);
 
   // Even if we're called twice or more for a mouse operation, we should
   // handle only once.  Although mMultipleActionsPrevented may be set to
   // true by different event handler in the future, we can use it for now.
-  if (aMouseEvent->mFlags.mMultipleActionsPrevented) {
+  if (aMouseOrPointerEvent->mFlags.mMultipleActionsPrevented) {
     return NS_OK;
   }
-  aMouseEvent->mFlags.mMultipleActionsPrevented = true;
+  aMouseOrPointerEvent->mFlags.mMultipleActionsPrevented = true;
 
   RefPtr<Selection> selection;
   if (aEditorBase) {
@@ -6392,16 +6392,30 @@ nsresult EventStateManager::HandleMiddleClickPaste(
   if (!range) {
     return NS_OK;
   }
-  WidgetMouseEvent mouseEvent(*aMouseEvent);
-  mouseEvent.mOriginalTarget = range->GetStartContainer();
-  if (NS_WARN_IF(!mouseEvent.mOriginalTarget) ||
-      !aEditorBase->IsAcceptableInputEvent(&mouseEvent)) {
-    return NS_OK;
+  {
+    Maybe<WidgetPointerEvent> pointerEvent;
+    Maybe<WidgetMouseEvent> mouseEvent;
+    if (aMouseOrPointerEvent->mClass == ePointerEventClass) {
+      MOZ_ASSERT(aMouseOrPointerEvent->AsPointerEvent());
+      pointerEvent.emplace(
+          static_cast<WidgetPointerEvent&>(*aMouseOrPointerEvent));
+    } else {
+      MOZ_ASSERT(!aMouseOrPointerEvent->AsPointerEvent());
+      MOZ_ASSERT(!aMouseOrPointerEvent->AsDragEvent());
+      mouseEvent.emplace(*aMouseOrPointerEvent);
+    }
+    WidgetMouseEvent& eventCopyRef =
+        pointerEvent.isSome() ? pointerEvent.ref() : mouseEvent.ref();
+    eventCopyRef.mOriginalTarget = range->GetStartContainer();
+    if (NS_WARN_IF(!eventCopyRef.mOriginalTarget) ||
+        !aEditorBase->IsAcceptableInputEvent(&eventCopyRef)) {
+      return NS_OK;
+    }
   }
 
   // If Control key is pressed, we should paste clipboard content as
   // quotation.  Otherwise, paste it as is.
-  if (aMouseEvent->IsControl()) {
+  if (aMouseOrPointerEvent->IsControl()) {
     DebugOnly<nsresult> rv = aEditorBase->PasteAsQuotationAsAction(
         clipboardType, EditorBase::DispatchPasteEvent::No, dataTransfer);
     NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "Failed to paste as quotation");
