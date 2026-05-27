@@ -839,6 +839,9 @@ class WidgetPointerEvent : public WidgetMouseEvent {
 
   explicit WidgetPointerEvent(const WidgetMouseEvent& aEvent)
       : WidgetMouseEvent(aEvent) {
+    MOZ_ASSERT(!aEvent.AsPointerEvent(),
+               "You're using wrong copy constructor, cast the source event to "
+               "`const WidgetPointerEvent&`");
     mClass = ePointerEventClass;
   }
 
