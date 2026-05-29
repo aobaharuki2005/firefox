@@ -1496,6 +1496,13 @@ export var Policies = {
           param.Locked
         );
       }
+      if ("Weather" in param) {
+        PoliciesUtils.setDefaultPref(
+          "browser.newtabpage.activity-stream.showWeather",
+          param.Weather,
+          param.Locked
+        );
+      }
       if ("TopSites" in param) {
         PoliciesUtils.setDefaultPref(
           "browser.newtabpage.activity-stream.feeds.topsites",
