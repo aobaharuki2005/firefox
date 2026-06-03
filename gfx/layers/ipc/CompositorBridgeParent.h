@@ -147,6 +147,8 @@ class CompositorBridgeParentBase : public PCompositorBridgeParent,
   virtual void NotifyMemoryPressure() {}
   virtual void AccumulateMemoryReport(wr::MemoryReport*) {}
 
+  bool OwnsExternalImageId(const wr::ExternalImageId& aId) const;
+
  protected:
   virtual ~CompositorBridgeParentBase();
 
