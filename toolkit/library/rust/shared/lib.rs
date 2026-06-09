@@ -121,8 +121,6 @@ extern crate midir_impl;
 
 #[cfg(target_os = "windows")]
 extern crate detect_win32k_conflicts;
-#[cfg(target_os = "windows")]
-extern crate shell_windows;
 
 extern crate origin_trials_ffi;
 

@@ -123,7 +123,6 @@ webext-storage = "0.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 detect_win32k_conflicts = { path = "../../../xre/detect_win32k_conflicts" }
-shell_windows = { path = "../../../../browser/components/shell/rust/shell_windows", optional = true }
 
 [features]
 default = []
@@ -149,7 +148,6 @@ thread_sanitizer = ["xpcom/thread_sanitizer"]
 uniffi_fixtures = ["gkrust-uniffi-fixtures"]
 webmidi_midir_impl = ["midir_impl"]
 icu4x = ["jsrust_shared/icu4x"]
-shell_windows = ["dep:shell_windows"]
 
 [lib]
 path = "lib.rs"
