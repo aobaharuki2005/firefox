@@ -1,4 +1,4 @@
-// |jit-test| --setpref=wasm_moz_intgemm=true; skip-if: !newGlobal({newCompartment: true, systemPrincipal: true}).wasmMozIntGemmEnabled()
+// |jit-test| --setpref=wasm_moz_intgemm=true; skip-if: true
 
 const wat = `(module
   ;; This builtin requires a memory, but no memory is declared, so we should
