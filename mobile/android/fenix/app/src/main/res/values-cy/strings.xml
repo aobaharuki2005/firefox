@@ -1145,10 +1145,12 @@
   <string name="customize_toggle_pocket_sponsored">Straeon wedi’u noddi</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">Papur wal</string>
+  <!-- Label for the menu item that opens the wallpaper settings screen. -->
+  <string name="browser_menu_change_wallpaper">Newid papur wal</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
   <string name="customize_toggle_contile">Llwybrau byr wedi’u noddi</string>
   <!-- Title for the customize home screen section that toggles the Homepage sports widget. -->
-  <string name="customize_toggle_world_cup" tools:ignore="UnusedResources">Cwpan y Byd</string>
+  <string name="customize_toggle_world_cup">Cwpan y Byd</string>
   <!--
     Wallpapers
 
@@ -2106,7 +2108,7 @@
   <!-- The error message of the dropdown, prompting the user to select a high-level reason why the site is broken. -->
   <string name="webcompat_reporter_choose_reason_error">Dewiswch reswm</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
-  <string name="webcompat_reporter_label_description_2">Disgrifiwch y broblem yn fanwl i\'n helpu i ymchwilio i\'r mater (dewisol)</string>
+  <string name="webcompat_reporter_label_description_2">Disgrifiwch y broblem yn fanwl i\'n helpu ni i ymchwilio i\'r mater (dewisol)</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_description">Disgrifiwch y broblem (dewisol)</string>
   <!-- The button text for navigating away from the feature to provide more information on the broken site's bug report. -->
@@ -2133,6 +2135,12 @@
   <string name="webcompat_reporter_preview_bottom_sheet_header">Rhagolwg Adroddiad</string>
   <!-- Label for the “Send” button shown in the WebCompat Report preview panel, which the user taps to submit the report. -->
   <string name="webcompat_reporter_preview_bottom_sheet_send">Anfon</string>
+  <!-- Title for the Edit URL confirmation dialog in the WebCompatReporter -->
+  <string name="webcompat_reporter_edit_url_dialog_title">Golygu URL gwefan</string>
+  <!-- Text shown on the save button for the Edit URL confirmation dialog in the WebCompatReporter. -->
+  <string name="webcompat_reporter_edit_url_dialog_save">Cadw</string>
+  <!-- Text shown on the dismiss button for the Edit URL confirmation dialog in the WebCompatReporter. -->
+  <string name="webcompat_reporter_edit_url_dialog_dismiss">Cau</string>
   <!--
     These reason strings are dropdown options on a WebCompat reporter form, indicating what is broken on the site.
 
@@ -2891,8 +2899,6 @@
   <string name="etp_suspected_fingerprinters_description">Yn galluogi diogelu rhag bysbrintio er mwyn atal bysbrintwyr posib.</string>
   <!-- Category of trackers (fingerprinters) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_known_fingerprinters_title">Bysbrintwyr Hysbys</string>
-  <!-- Label for the fingerprinters category shown in the tracking protections dashboard breakdown -->
-  <string name="tracking_dashboard_fingerprinters_category_name">Bysbrintwyr</string>
   <!--
     Description of the SmartBlock Enhanced Tracking Protection feature. The * symbol is intentionally hardcoded here,
     as we use it on the UI to indicate which trackers have been partially unblocked.
@@ -3239,7 +3245,7 @@
   <!-- Label for the button that starts the browser VPN authentication or authorization flow on the settings screen -->
   <string name="ip_protection_get_started">Cychwyn arni</string>
   <!-- Label for the "connecting" state of the button that starts the browser VPN authentication or authorization flow on the settings screen -->
-  <string name="ip_protection_connecting">Cysylltu…</string>
+  <string name="ip_protection_connecting">Yn cysylltu…</string>
   <!-- Headline for the browser VPN onboarding card. %s is the name of the app (for example "Firefox"). -->
   <string name="ip_protection_onboarding_card_headline">Rhowch gynnig ar VPN mewnol %s</string>
   <!--
@@ -4006,6 +4012,90 @@
   <string name="protection_panel_privacy_and_security_settings_2">Gosodiadau Preifatrwydd</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Caniatâd</string>
+  <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
+    <!--
+      Text for displaying the total number of trackers blocked in the trackers blocked panel.
+      %1$d is a placeholder for the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d traciwr wedi\'i rwystro ar y wefan yma</item>
+    <item quantity="zero">%1$d tracwyr wedi\'u rwystro ar y wefan yma</item>
+    <item quantity="two">%1$d draciwr wedi\'u rhwystro ar y wefan yma</item>
+    <item quantity="few">%1$d traciwr wedi\'u rhwystro ar y wefan yma</item>
+    <item quantity="many">%1$d traciwr wedi\'u rhwystro ar y wefan yma</item>
+    <item quantity="other">%1$d traciwr wedi\'u rhwystro ar y wefan yma</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_social_media_trackers">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked social media trackers.
+      %1$d is a placeholder for the number of social media trackers blocked.
+    -->
+    <item quantity="one">%1$d traciwr cyfryngau cymdeithasol</item>
+    <item quantity="zero">%1$d tracwyr cyfryngau cymdeithasol</item>
+    <item quantity="two">%1$d draciwr cyfryngau cymdeithasol</item>
+    <item quantity="few">%1$d traciwr cyfryngau cymdeithasol</item>
+    <item quantity="many">%1$d traciwr cyfryngau cymdeithasol</item>
+    <item quantity="other">%1$d traciwr cyfryngau cymdeithasol</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cross_site_cookies">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cross-site tracking cookies.
+      %1$d is a placeholder for the number of cross-site tracking cookies blocked.
+    -->
+    <item quantity="one">%1$d cwci tracio traws-wefan</item>
+    <item quantity="zero">%1$d cwcis tracio traws-wefan</item>
+    <item quantity="two">%1$d gwci tracio traws-wefan</item>
+    <item quantity="few">%1$d cwci tracio traws-wefan</item>
+    <item quantity="many">%1$d cwci tracio traws-wefan</item>
+    <item quantity="other">%1$d cwci tracio traws-wefan</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cryptominers">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cryptomining scripts.
+      %1$d is a placeholder for the number of cryptominers blocked.
+    -->
+    <item quantity="one">%1$d cryptogloddiwr</item>
+    <item quantity="zero">%1$d cryptogloddwyr</item>
+    <item quantity="two">%1$d gryptogloddiwr</item>
+    <item quantity="few">%1$d cryptogloddiwr</item>
+    <item quantity="many">%1$d cryptogloddiwr</item>
+    <item quantity="other">%1$d cryptogloddiwr</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_fingerprinters">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked fingerprinter scripts.
+      %1$d is a placeholder for the number of fingerprinters blocked.
+    -->
+    <item quantity="one">%1$d bysbrintiwr</item>
+    <item quantity="zero">%1$d bysbrintwyr</item>
+    <item quantity="two">%1$d bysbrintiwr</item>
+    <item quantity="few">%1$d bysbrintiwr</item>
+    <item quantity="many">%1$d bysbrintiwr</item>
+    <item quantity="other">%1$d bysbrintiwr</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_trackers_2">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked generic tracking scripts.
+      %1$d is a placeholder for the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d cynnwys tracio</item>
+    <item quantity="zero">%1$d cynnwys tracio</item>
+    <item quantity="two">%1$d gynnwys tracio</item>
+    <item quantity="few">%1$d cynnwys tracio</item>
+    <item quantity="many">%1$d cynnwys tracio</item>
+    <item quantity="other">%1$d cynnwys tracio</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_trackers_blocked_this_week_2">
+    <!--
+      Text for displaying the number of trackers blocked this week in the trackers blocked panel.
+      %1$d is a placeholder for the number of trackers blocked this week.
+    -->
+    <item quantity="one">%1$d traciwr wedi\'i rwystro yr wythnos yma</item>
+    <item quantity="zero">%1$d tracwyr wedi\'u rhwystro yr wythnos yma</item>
+    <item quantity="two">%1$d traciwr wedi\'u rhwystro yr wythnos yma</item>
+    <item quantity="few">%1$d traciwr wedi\'u rhwystro yr wythnos yma</item>
+    <item quantity="many">%1$d traciwr wedi\'u rhwystro yr wythnos yma</item>
+    <item quantity="other">%1$d traciwr wedi\'u rhwystro yr wythnos yma</item>
+  </plurals>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -4017,11 +4107,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
-  <!--
-    Text for displaying the number of trackers blocked this week in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked this week.
-  -->
-  <string name="trackers_blocked_panel_num_trackers_blocked_this_week">Tracwyr wedi\'u rhwystro yr wythnos hon: %d</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4632,7 +4717,7 @@
   <!-- Sports widget match status label shown during halftime of a match. -->
   <string name="sports_widget_halftime" tools:ignore="UnusedResources">Hanner amser</string>
   <!-- Sports widget match status label shown during extra time of a match. -->
-  <string name="sports_widget_extra_time" tools:ignore="UnusedResources">Amser ychwanegol</string>
+  <string name="sports_widget_extra_time">Amser ychwanegol</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="sports_widget_penalties">Ciciau cosb</string>
   <!--

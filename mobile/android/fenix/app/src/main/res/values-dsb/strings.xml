@@ -1143,10 +1143,12 @@
   <string name="customize_toggle_pocket_sponsored">Sponserowane tšojeńka</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">Slězynowe wobraze</string>
+  <!-- Label for the menu item that opens the wallpaper settings screen. -->
+  <string name="browser_menu_change_wallpaper">Slězynowy wobraz změniś</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
   <string name="customize_toggle_contile">Sponserowane zwězanja</string>
   <!-- Title for the customize home screen section that toggles the Homepage sports widget. -->
-  <string name="customize_toggle_world_cup" tools:ignore="UnusedResources">Swětowe mejstaŕstwo</string>
+  <string name="customize_toggle_world_cup">Swětowe mejstaŕstwo</string>
   <!--
     Wallpapers
 
@@ -2119,6 +2121,12 @@
   <string name="webcompat_reporter_preview_bottom_sheet_header">Pśeglěd rozpšawy</string>
   <!-- Label for the “Send” button shown in the WebCompat Report preview panel, which the user taps to submit the report. -->
   <string name="webcompat_reporter_preview_bottom_sheet_send">Pósłaś</string>
+  <!-- Title for the Edit URL confirmation dialog in the WebCompatReporter -->
+  <string name="webcompat_reporter_edit_url_dialog_title">URL websedła wobźěłaś</string>
+  <!-- Text shown on the save button for the Edit URL confirmation dialog in the WebCompatReporter. -->
+  <string name="webcompat_reporter_edit_url_dialog_save">Składowaś</string>
+  <!-- Text shown on the dismiss button for the Edit URL confirmation dialog in the WebCompatReporter. -->
+  <string name="webcompat_reporter_edit_url_dialog_dismiss">Zachyśiś</string>
   <!--
     These reason strings are dropdown options on a WebCompat reporter form, indicating what is broken on the site.
 
@@ -2873,8 +2881,6 @@
   <string name="etp_suspected_fingerprinters_description">Zmóžnja šćit pśeśiwo zběrarjam palcowych wótśišćow, aby suspektne zběrarje palcowych wótśišćow blokěrował.</string>
   <!-- Category of trackers (fingerprinters) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_known_fingerprinters_title">Znate zběrarje palcowych wótśišćow</string>
-  <!-- Label for the fingerprinters category shown in the tracking protections dashboard breakdown -->
-  <string name="tracking_dashboard_fingerprinters_category_name">Zběrarje palcowych wótśišćow</string>
   <!--
     Description of the SmartBlock Enhanced Tracking Protection feature. The * symbol is intentionally hardcoded here,
     as we use it on the UI to indicate which trackers have been partially unblocked.
@@ -3986,6 +3992,76 @@
   <string name="protection_panel_privacy_and_security_settings_2">Nastajenja priwatnosći</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Pšawa</string>
+  <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
+    <!--
+      Text for displaying the total number of trackers blocked in the trackers blocked panel.
+      %1$d is a placeholder for the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d pśeslědowak jo se blokěrował na toś tom sedle</item>
+    <item quantity="two">%1$d pśeslědowaka stej se blokěrowałej na toś tom sedle</item>
+    <item quantity="few">%1$d pśeslědowaki su se blokěrowali na toś tom sedle</item>
+    <item quantity="other">%1$d pśeslědowakow jo se blokěrowało na toś tom sedle</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_social_media_trackers">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked social media trackers.
+      %1$d is a placeholder for the number of social media trackers blocked.
+    -->
+    <item quantity="one">%1$d pśeslědowak socialnych medijow</item>
+    <item quantity="two">%1$d pśeslědowaka socialnych medijow</item>
+    <item quantity="few">%1$d pśeslědowaki socialnych medijow</item>
+    <item quantity="other">%1$d pśeslědowakow socialnych medijow</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cross_site_cookies">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cross-site tracking cookies.
+      %1$d is a placeholder for the number of cross-site tracking cookies blocked.
+    -->
+    <item quantity="one">%1$d sedła pśesegujucy slědujucy cookie</item>
+    <item quantity="two">%1$d sedła pśesegujucej slědujucej cookieja</item>
+    <item quantity="few">%1$d sedła pśesegujuce slědujuce cookieje</item>
+    <item quantity="other">%1$d sedła pśesegujucych slědujucych cookiejow</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cryptominers">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cryptomining scripts.
+      %1$d is a placeholder for the number of cryptominers blocked.
+    -->
+    <item quantity="one">%1$d kryptokopak</item>
+    <item quantity="two">%1$d kryptokopaka</item>
+    <item quantity="few">%1$d kryptokopaki</item>
+    <item quantity="other">%1$d kryptokopakow</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_fingerprinters">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked fingerprinter scripts.
+      %1$d is a placeholder for the number of fingerprinters blocked.
+    -->
+    <item quantity="one">%1$d zběraŕ palcowych wótśišćow</item>
+    <item quantity="two">%1$d zběrarja palcowych wótśišćow</item>
+    <item quantity="few">%1$d zběrarje palcowych wótśišćow</item>
+    <item quantity="other">%1$d zběrarjow palcowych wótśišćow</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_trackers_2">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked generic tracking scripts.
+      %1$d is a placeholder for the number of trackers blocked.
+    -->
+    <item quantity="one">%1$d slědujuce wopśimjeśe</item>
+    <item quantity="two">%1$d slědujucej wopśimjeśi</item>
+    <item quantity="few">%1$d slědujuce wopśimjeśa</item>
+    <item quantity="other">%1$d slědujucych wopśimjeśow</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_trackers_blocked_this_week_2">
+    <!--
+      Text for displaying the number of trackers blocked this week in the trackers blocked panel.
+      %1$d is a placeholder for the number of trackers blocked this week.
+    -->
+    <item quantity="one">%1$d pśeslědowak, kótaryž jo se blokěrował toś ten tyźeń</item>
+    <item quantity="two">%1$d pśeslědowaka, kótarejž stej se blokěrowałej toś ten tyźeń</item>
+    <item quantity="few">%1$d pśeslědowaki, kótarež su se blokěrowali toś ten tyźeń</item>
+    <item quantity="other">%1$d pśeslědowakow, kótarež jo se blokěrowało toś ten tyźeń</item>
+  </plurals>
   <!--
     Text for displaying the total number of trackers blocked in the trackers blocked panel.
     %d is a placeholder for the number of trackers blocked.
@@ -3997,11 +4073,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
-  <!--
-    Text for displaying the number of trackers blocked this week in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked this week.
-  -->
-  <string name="trackers_blocked_panel_num_trackers_blocked_this_week">Pśeslědowaki, kótare su se blokěrowali toś ten tyźeń: %d</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4612,7 +4683,7 @@
   <!-- Sports widget match status label shown during halftime of a match. -->
   <string name="sports_widget_halftime" tools:ignore="UnusedResources">Połcas</string>
   <!-- Sports widget match status label shown during extra time of a match. -->
-  <string name="sports_widget_extra_time" tools:ignore="UnusedResources">Pódlejšenje</string>
+  <string name="sports_widget_extra_time">Pódlejšenje</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="sports_widget_penalties">Pokutne kopy</string>
   <!--
