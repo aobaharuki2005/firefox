@@ -1091,21 +1091,14 @@ RefPtr<ProcessLaunchPromise> BaseProcessLauncher::PerformAsyncLaunch() {
   // non-blocking, and the next step in our caller will be ->Then-ed onto this
   // event target, meaning this avoids unnecessary thread hops back to the
   // launch target on platforms like macOS.
+  RefPtr<BaseProcessLauncher> self = this;
   return DoLaunch()->Then(
-      XRE_GetAsyncIOEventTarget(), __func__,
-      [self = RefPtr{this}](base::ProcessHandle aHandle) {
+      mLaunchThread, __func__,
+      [self](base::ProcessHandle aHandle) {
         self->mResults.mHandle = aHandle;
-
-        // Explicitly destroy any outstanding references to HANDLEs which may
-        // be held by mChildArgs before resolving. This is technically
-        // redundant since it happens naturally when BaseProcessLauncher is
-        // destroyed, but makes it explicit — leaking one of these HANDLEs
-        // could prevent detecting a child process shutting down or crashing.
-        self->mChildArgs = {};
         return self->FinishLaunch();
       },
-      [self = RefPtr{this}](LaunchError aError) {
-        self->mChildArgs = {};
+      [](LaunchError aError) {
         return ProcessLaunchPromise::CreateAndReject(aError, __func__);
       });
 }
