@@ -115,11 +115,11 @@ jobs:
           
           # Copy Momiji/Nightly.app to /tmp
           ## Nightly
-          hdiutil attach -noverify "obj-ff-dbg-esr/dist/firefox-${VERSION}.en-US.mac.dmg"  
+          hdiutil attach -noverify "obj-ff-dbg/dist/firefox-${VERSION}.en-US.mac.dmg"  
           cp -R /Volumes/Nightly/Nightly.app /tmp
 
           ## Momiji
-          # hdiutil attach -noverify "obj-ff-dbg-esr/dist/momiji-${VERSION}.en-US.mac.dmg"  
+          # hdiutil attach -noverify "obj-ff-dbg/dist/momiji-${VERSION}.en-US.mac.dmg"  
           # cp -R /Volumes/Momiji/Momiji.app /tmp
 
           # Build libMacportsLegacySystem.B.dylib (patched to support CCRandomGenerateBytes and exp10)
@@ -262,11 +262,11 @@ jobs:
           
           # Copy Momiji/Nightly.app to /tmp
           ## Nightly
-          hdiutil attach -noverify "obj-ff-dbg-esr/dist/firefox-${VERSION}.en-US.mac.dmg"  
+          hdiutil attach -noverify "obj-ff-dbg/dist/firefox-${VERSION}.en-US.mac.dmg"  
           cp -R /Volumes/Nightly/Nightly.app /tmp
 
           ## Momiji
-          # hdiutil attach -noverify "obj-ff-dbg-esr/dist/momiji-${VERSION}.en-US.mac.dmg"  
+          # hdiutil attach -noverify "obj-ff-dbg/dist/momiji-${VERSION}.en-US.mac.dmg"  
           # cp -R /Volumes/Momiji/Momiji.app /tmp
 
           # Build libMacportsLegacySystem.B.dylib (patched to support CCRandomGenerateBytes and exp10)
@@ -396,11 +396,11 @@ jobs:
           
           # Copy Momiji/Nightly.app to /tmp
           ## Nightly
-          # hdiutil attach -noverify "obj-ff-dbg-esr/dist/firefox-${VERSION}.en-US.mac.dmg"  
+          # hdiutil attach -noverify "obj-ff-dbg/dist/firefox-${VERSION}.en-US.mac.dmg"  
           # cp -R /Volumes/Nightly/Nightly.app /tmp
 
           ## Momiji
-          hdiutil attach -noverify "obj-ff-dbg-esr/dist/momiji-${VERSION}.en-US.mac.dmg"  
+          hdiutil attach -noverify "obj-ff-dbg/dist/momiji-${VERSION}.en-US.mac.dmg"  
           cp -R /Volumes/Momiji/Momiji.app /tmp
           
           # Package the output app
