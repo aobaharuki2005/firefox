@@ -1,7 +1,9 @@
 name: build Momiji for macOS
 
 on: 
-  workflow_dispatch:
+  push:
+    branches:
+      - '*test'
 
 jobs:
   macos1007-1008:
