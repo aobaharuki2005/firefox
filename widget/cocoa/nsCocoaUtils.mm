@@ -1436,8 +1436,8 @@ nsresult nsCocoaUtils::GetScreenCapturePermissionState(
     }
   }
 
-  aPermissionState = nsIOSPermissionRequest::PERMISSION_STATE_DENIED;
-  LOG("screen authorization status: not authorized");
+  LOG("nsIOSPermissionRequest not available on macOS 10.14 and earlier, enable anyway");
+  aPermissionState = nsIOSPermissionRequest::PERMISSION_STATE_AUTHORIZED;
   return NS_OK;
 }
 

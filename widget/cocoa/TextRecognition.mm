@@ -2,6 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#if !defined(MAC_OS_VERSION_10_9) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_VERSION_10_9
+#include <math.h>
+extern "C" {
+  void __sincospif(float __x, float *__sinp, float *__cosp);
+  void __sincospi(double __x, double *__sinp, double *__cosp);
+} 
+#endif // !defined(MAC_OS_VERSION_10_9) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_VERSION_10_9
+
 #import <Vision/Vision.h>
 
 #include "mozilla/dom/Promise.h"
