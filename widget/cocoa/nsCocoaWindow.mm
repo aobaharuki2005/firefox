@@ -89,6 +89,10 @@ enum NSWindowOcclusionState { NSWindowOcclusionStateVisible = 0x1 << 1 };
 
 #pragma mark -
 
++ (uint32_t)sUniqueKeyEventId {
+  return sUniqueKeyEventId;
+}
+
 #if !defined(MAC_OS_X_VERSION_10_10) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_10
 
 enum NSWindowTitleVisibility { NSWindowTitleVisible = 0, NSWindowTitleHidden = 1 };
@@ -155,6 +159,7 @@ static void RollUpPopups(nsIRollupListener::AllowAnimations aAllowAnimations =
 
 nsCocoaWindow::nsCocoaWindow()
     : mWindow(nil),
+      mClosedRetainedWindow(nil),
       mDelegate(nil),
       mPopupContentView(nil),
       mFullscreenTransitionAnimation(nil),
@@ -224,6 +229,7 @@ nsCocoaWindow::~nsCocoaWindow() {
     DestroyNativeWindow();
   }
 
+  [mClosedRetainedWindow release];
   NS_IF_RELEASE(mPopupContentView);  
   NS_OBJC_END_TRY_IGNORE_BLOCK;
 }
