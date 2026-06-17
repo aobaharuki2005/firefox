@@ -516,9 +516,10 @@ already_AddRefed<nsIWidget> nsBaseWidget::CreateChild(
 
 // Attach a view to our widget which we'll send events to.
 void nsBaseWidget::AttachViewToTopLevel(bool aUseAttachedEvents) {
-  NS_ASSERTION(mWindowType == WindowType::TopLevel ||
-                   mWindowType == WindowType::Dialog ||
-                   mWindowType == WindowType::Invisible,
+  NS_ASSERTION((mWindowType == WindowType::TopLevel ||
+                mWindowType == WindowType::Dialog ||
+                mWindowType == WindowType::Invisible,
+                mWindowType == WindowType::Child),
                "Can't attach to window of that type");
 
   mUseAttachedEvents = aUseAttachedEvents;
@@ -601,15 +602,6 @@ nsIntSize nsIWidget::CustomCursorSize(const Cursor& aCursor) {
   aCursor.mContainer->GetHeight(&height);
   aCursor.mResolution.ApplyTo(width, height);
   return {width, height};
-}
-
-LayoutDeviceIntSize nsIWidget::NormalSizeModeClientToWindowSizeDifference() {
-  auto margin = NormalSizeModeClientToWindowMargin();
-  MOZ_ASSERT(margin.top >= 0, "Window should be bigger than client area");
-  MOZ_ASSERT(margin.left >= 0, "Window should be bigger than client area");
-  MOZ_ASSERT(margin.right >= 0, "Window should be bigger than client area");
-  MOZ_ASSERT(margin.bottom >= 0, "Window should be bigger than client area");
-  return {margin.LeftRight(), margin.TopBottom()};
 }
 
 RefPtr<mozilla::VsyncDispatcher> nsIWidget::GetVsyncDispatcher() {
@@ -940,8 +932,8 @@ nsBaseWidget::AutoLayerManagerSetup::AutoLayerManagerSetup(
     nsBaseWidget* aWidget, gfxContext* aTarget)
     : mWidget(aWidget) {
   WindowRenderer* renderer = mWidget->GetWindowRenderer();
-  if (auto* fallback = renderer->AsFallback()) {
-    mRenderer = fallback;
+  if (renderer->AsFallback()) {
+    mRenderer = renderer->AsFallback();
     mRenderer->SetTarget(aTarget);
   }
 }
@@ -969,7 +961,7 @@ bool nsBaseWidget::UseAPZ() const {
   }
 
   // Always use APZ for top-level windows. XXX what about Dialog?
-  if (mWindowType == WindowType::TopLevel) {
+  if (mWindowType == WindowType::TopLevel || mWindowType == WindowType::Child ) {
     return true;
   }
 
@@ -987,7 +979,7 @@ bool nsBaseWidget::UseAPZ() const {
            mWindowType == WindowType::Popup;
   }
 
-  if (StaticPrefs::apz_popups_without_remote_enabled()) {
+  else if (StaticPrefs::apz_popups_without_remote_enabled()) {
     return mWindowType == WindowType::Popup;
   }
 

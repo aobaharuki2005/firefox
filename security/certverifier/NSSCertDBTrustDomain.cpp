@@ -51,6 +51,10 @@
 #include "secder.h"
 #include "secerr.h"
 
+#ifdef MOZ_WIDGET_COCOA
+#  include "nsCocoaFeatures.h"
+#endif
+
 #include "TrustOverrideUtils.h"
 #include "TrustOverride-AppleGoogleDigiCertData.inc"
 #include "TrustOverride-SymantecData.inc"
@@ -1825,6 +1829,12 @@ CK_RV OSClientCerts_C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList);
 }  // extern "C"
 
 bool LoadOSClientCertsModule() {
+#ifdef MOZ_WIDGET_COCOA
+  // osclientcerts requires macOS 10.14 or later
+  if (!nsCocoaFeatures::OnMojaveOrLater()) {
+    return false;
+  }
+#endif
 // Corresponds to Rust cfg(any(
 //  target_os = "macos",
 //  target_os = "ios",
