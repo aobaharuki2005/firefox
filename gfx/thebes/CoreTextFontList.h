@@ -157,6 +157,7 @@ class CTFontFamily : public gfxFontFamily {
 class CoreTextFontList : public gfxPlatformFontList {
 
  public:
+  using FontFamilyListEntry = mozilla::dom::SystemFontListEntry;
   already_AddRefed<gfxFontFamily> CreateFontFamily(
       const nsACString& aName, FontVisibility aVisibility) const override;
 
