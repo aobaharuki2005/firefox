@@ -321,7 +321,7 @@ class nsCocoaWindow final : public nsBaseWidget {
   bool HasModalDescendants() const { return mNumModalDescendants > 0; }
   bool IsModal() const { return mModal; }
 
-  NSWindow* GetCocoaWindow() { return [[mWindow retain] autorelease]; }
+  NSWindow* GetCocoaWindow() { return mWindow; }
 
   void SetMenuBar(RefPtr<nsMenuBarX>&& aMenuBar);
   nsMenuBarX* GetMenuBar();
@@ -387,7 +387,11 @@ class nsCocoaWindow final : public nsBaseWidget {
   void UpdateFullscreenState(bool aFullScreen, bool aNativeMode);
   nsresult DoMakeFullScreen(bool aFullScreen, bool aUseSystemTransition);
 
-  BaseWindow* mWindow;  // our cocoa window [STRONG]
+  already_AddRefed<nsIWidget> AllocateChildPopupWidget() override {
+    return nsIWidget::CreateTopLevelWindow();
+  }
+
+  BaseWindow* mWindow;                // our cocoa window [STRONG]
   BaseWindow* mClosedRetainedWindow;  // a second strong reference to our
   // window upon closing it, held through our destructor. This is useful
   // to ensure that macOS run loops which reference the window will still

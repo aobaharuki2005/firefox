@@ -6,8 +6,6 @@
 
 #include "nsCocoaWindow.h"
 
-#include "nsIAppStartup.h"
-#include "mozilla/Components.h"
 #include "NativeKeyBindings.h"
 #include "ScreenHelperCocoa.h"
 #include "TextInputHandler.h"
@@ -87,8 +85,6 @@ enum NSWindowOcclusionState { NSWindowOcclusionStateVisible = 0x1 << 1 };
 
 #endif
 
-#pragma mark -
-
 #if !defined(MAC_OS_X_VERSION_10_10) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_10
 
 enum NSWindowTitleVisibility { NSWindowTitleVisible = 0, NSWindowTitleHidden = 1 };
@@ -101,7 +97,7 @@ enum NSWindowTitleVisibility { NSWindowTitleVisible = 0, NSWindowTitleHidden = 1
 #endif
 
 #if !defined(MAC_OS_X_VERSION_10_12) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
- 
+
 @interface NSWindow (AutomaticWindowTabbing)
 + (void)setAllowsAutomaticWindowTabbing:(BOOL)allow;
 @end
@@ -126,7 +122,6 @@ static NSString* const CGSSpacesKey = @"Spaces";
 extern CGSConnection _CGSDefaultConnection(void);
 extern CGError CGSSetWindowTransform(CGSConnection cid, CGSWindow wid,
                                      CGAffineTransform transform);
-
 }
 
 #define NS_APPSHELLSERVICE_CONTRACTID "@mozilla.org/appshell/appShellService;1"
@@ -206,7 +201,10 @@ void nsCocoaWindow::DestroyNativeWindow() {
   // sent to it after this object has been destroyed.
   mWindow.delegate = nil;
 
-  // Closing the window will also release it.
+  // Closing the window will also release it. Our second reference will
+  // keep it alive through our destructor. Release any reference we might
+  // have from an earlier call to DestroyNativeWindow, then create a new
+  // one.
   [mClosedRetainedWindow autorelease];
   mClosedRetainedWindow = [mWindow retain];
   MOZ_ASSERT(mWindow.releasedWhenClosed);
@@ -228,7 +226,8 @@ nsCocoaWindow::~nsCocoaWindow() {
   }
 
   [mClosedRetainedWindow release];
-  NS_IF_RELEASE(mPopupContentView);  
+
+  NS_IF_RELEASE(mPopupContentView);
   NS_OBJC_END_TRY_IGNORE_BLOCK;
 }
 
@@ -635,7 +634,7 @@ void* nsCocoaWindow::GetNativeData(uint32_t aDataType) {
       break;
 
     case NS_NATIVE_WINDOW:
-      retVal = [[mWindow retain] autorelease];
+      retVal = mWindow;
       break;
 
     case NS_NATIVE_GRAPHIC:
@@ -1300,11 +1299,11 @@ void nsCocoaWindow::HideWindowChrome(bool aShouldHide) {
 
   // Recreate the window with the right border style.
   NSRect frameRect = mWindow.frame;
-  BOOL isPrivateWindow = !mWindow.restorable;
+  BOOL restorable = mWindow.restorable;
   DestroyNativeWindow();
   nsresult rv = CreateNativeWindow(
       frameRect, aShouldHide ? BorderStyle::None : mBorderStyle, true,
-      isPrivateWindow);
+      restorable);
   NS_ENSURE_SUCCESS_VOID(rv);
 
   // Re-import state.
@@ -1611,22 +1610,16 @@ void nsCocoaWindow::ProcessTransitions() {
           // Run a local run loop until it is safe to start a native fullscreen
           // transition.
           NSRunLoop* localRunLoop = [NSRunLoop currentRunLoop];
-
-          // Retain our initial mWindow so it doesn't change under us. We'll
-          // release it after finishing the runloop.
-          NSWindow* initialWindow = mWindow;
-          [initialWindow retain];
-
-          while (!CanStartNativeTransition() &&
+          while (mWindow && !CanStartNativeTransition() &&
                  [localRunLoop runMode:NSDefaultRunLoopMode
                             beforeDate:[NSDate distantFuture]]) {
             // This loop continues to process events until
-            // CanStartNativeTransition() returns true.
+            // CanStartNativeTransition() returns true or our native
+            // window has been destroyed.
           }
 
           // This triggers an async animation, so continue.
-          [initialWindow toggleFullScreen:nil];
-          [initialWindow release];
+          [mWindow toggleFullScreen:nil];
           continue;
         }
         break;
@@ -1652,22 +1645,16 @@ void nsCocoaWindow::ProcessTransitions() {
             // Run a local run loop until it is safe to start a native
             // fullscreen transition.
             NSRunLoop* localRunLoop = [NSRunLoop currentRunLoop];
-
-            // Retain our initial mWindow so it doesn't change under us. We'll
-            // release it after finishing the runloop.
-            NSWindow* initialWindow = mWindow;
-            [initialWindow retain];
-
-            while (!CanStartNativeTransition() &&
+            while (mWindow && !CanStartNativeTransition() &&
                    [localRunLoop runMode:NSDefaultRunLoopMode
                               beforeDate:[NSDate distantFuture]]) {
               // This loop continues to process events until
-              // CanStartNativeTransition() returns true.
+              // CanStartNativeTransition() returns true or our native
+              // window has been destroyed.
             }
 
             // This triggers an async animation, so continue.
-            [initialWindow toggleFullScreen:nil];
-            [initialWindow release];
+            [mWindow toggleFullScreen:nil];
             continue;
           } else {
             mSuppressSizeModeEvents = true;
@@ -2680,13 +2667,6 @@ already_AddRefed<nsIWidget> nsIWidget::CreateChildWindow() {
 + (void)paintMenubarForWindow:(NSWindow*)aWindow {
   NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
 
-  if (!NSApp.active) {
-    // Early exit if the app isn't active. This is because we can't safely
-    // set the NSApp.mainMenu property in such a case. We early exit so we
-    // also don't invoke any side effects.
-    return;
-  }
-
   // make sure we only act on windows that have this kind of
   // object as a delegate
   id windowDelegate = [aWindow delegate];
@@ -2947,17 +2927,9 @@ void nsCocoaWindow::CocoaWindowDidResize() {
   RefPtr<nsMenuBarX> hiddenWindowMenuBar =
       nsMenuUtilsX::GetHiddenWindowMenuBar();
   if (hiddenWindowMenuBar) {
-    bool isTerminating = false;
-    nsCOMPtr<nsIAppStartup> appStartup(components::AppStartup::Service());
-    if (appStartup) {
-      appStartup->GetAttemptingQuit(&isTerminating);
-    }
-
-    if (!isTerminating) {
-      // We do an async paint in order to prevent crashes when macOS is actively
-      // enumerating the menu items in `NSApp.mainMenu`.
-      hiddenWindowMenuBar->PaintAsyncIfNeeded();
-    }
+    // We do an async paint in order to prevent crashes when macOS is actively
+    // enumerating the menu items in `NSApp.mainMenu`.
+    hiddenWindowMenuBar->PaintAsyncIfNeeded();
   }
 
   NSWindow* window = [aNotification object];
