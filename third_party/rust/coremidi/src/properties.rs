@@ -12,7 +12,7 @@ use coremidi_sys::{
     kMIDIPropertyIsMixer, kMIDIPropertyIsSampler, kMIDIPropertyManufacturer,
     kMIDIPropertyMaxReceiveChannels, kMIDIPropertyMaxSysExSpeed, kMIDIPropertyMaxTransmitChannels,
     kMIDIPropertyModel, kMIDIPropertyName, kMIDIPropertyOffline, kMIDIPropertyPanDisruptsStereo,
-    kMIDIPropertyPrivate, kMIDIPropertyProtocolID, kMIDIPropertyReceiveChannels,
+    kMIDIPropertyPrivate, kMIDIPropertyReceiveChannels,
     kMIDIPropertyReceivesBankSelectLSB, kMIDIPropertyReceivesBankSelectMSB,
     kMIDIPropertyReceivesClock, kMIDIPropertyReceivesMTC, kMIDIPropertyReceivesNotes,
     kMIDIPropertyReceivesProgramChanges, kMIDIPropertySingleRealtimeEntity,
@@ -412,11 +412,6 @@ impl Properties {
     /// See [kMIDIPropertyDisplayName](https://developer.apple.com/documentation/coremidi/kMIDIPropertyDisplayName)
     pub fn display_name() -> StringProperty {
         StringProperty::from_constant_string_ref(unsafe { kMIDIPropertyDisplayName })
-    }
-
-    /// See [kMIDIPropertyProtocolID](https://developer.apple.com/documentation/coremidi/kmidipropertyprotocolid)
-    pub fn protocol_id() -> IntegerProperty {
-        IntegerProperty::from_constant_string_ref(unsafe { kMIDIPropertyProtocolID })
     }
 }
 

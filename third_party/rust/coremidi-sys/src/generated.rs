@@ -868,9 +868,6 @@ extern "C" {
     pub static kMIDIPropertyDisplayName: CFStringRef;
 }
 extern "C" {
-    pub static kMIDIPropertyProtocolID: CFStringRef;
-}
-extern "C" {
     pub static kMIDIPropertyUMPActiveGroupBitmap: CFStringRef;
 }
 extern "C" {

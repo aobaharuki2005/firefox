@@ -20,13 +20,6 @@ fn main() {
 
     // The rest of the supported properties can be accessed like:
 
-    println!(
-        "  Protocol ID: {}",
-        destination
-            .get_property::<i32>(&Properties::protocol_id())
-            .unwrap()
-    );
-
     destination
         .set_property(&Properties::private(), true)
         .unwrap();
