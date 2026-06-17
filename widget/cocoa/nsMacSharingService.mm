@@ -208,7 +208,7 @@ nsMacSharingService::ShareUrl(const nsAString& aServiceName,
     if (!service) {
       return NS_ERROR_FAILURE;
     }
-    [service setSubject:pageTitle]
+    [service setSubject:pageTitle];
 
     // Reminders fetch its data from an activity, not the share data
     if (nsCocoaFeatures::OnYosemiteOrLater()) {
