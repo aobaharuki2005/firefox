@@ -3,7 +3,7 @@ name: build Momiji for macOS
 on: 
   push:
     branches:
-      - *test
+      - '*test'
 
 jobs:
   macos1007-1008:
