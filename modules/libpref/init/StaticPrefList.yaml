@@ -9098,7 +9098,11 @@
 # Are wasm call_ref calls (within same Instance) candidates for inlining?
 - name: javascript.options.wasm_call_ref_inlining
   type: bool
+#ifdef NIGHTLY_BUILD
   value: true
+#else
+  value: false
+#endif
   mirror: always
   set_spidermonkey_pref: always
 
