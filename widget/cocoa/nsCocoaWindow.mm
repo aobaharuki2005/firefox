@@ -89,10 +89,6 @@ enum NSWindowOcclusionState { NSWindowOcclusionStateVisible = 0x1 << 1 };
 
 #pragma mark -
 
-+ (uint32_t)sUniqueKeyEventId {
-  return sUniqueKeyEventId;
-}
-
 #if !defined(MAC_OS_X_VERSION_10_10) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_10
 
 enum NSWindowTitleVisibility { NSWindowTitleVisible = 0, NSWindowTitleHidden = 1 };
@@ -211,6 +207,8 @@ void nsCocoaWindow::DestroyNativeWindow() {
   mWindow.delegate = nil;
 
   // Closing the window will also release it.
+  [mClosedRetainedWindow autorelease];
+  mClosedRetainedWindow = [mWindow retain];
   MOZ_ASSERT(mWindow.releasedWhenClosed);
   [mWindow close];
 
