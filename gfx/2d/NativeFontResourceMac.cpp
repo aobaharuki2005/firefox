@@ -111,7 +111,7 @@ already_AddRefed<UnscaledFont> NativeFontResourceMac::CreateUnscaledFont(
     uint32_t aIndex, const uint8_t* aInstanceData,
     uint32_t aInstanceDataLength) {
   RefPtr unscaledFont =
-      MakeRefPtr<UnscaledFontMac>(mFontDescRef, mFontRef, true);
+      MakeRefPtr<UnscaledFontMac>(mFontRef, true);
 
   return unscaledFont.forget();
 }
