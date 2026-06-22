@@ -41,8 +41,6 @@
 #include <unistd.h>
 #include <mach/mach.h>
 #include <TargetConditionals.h>
-#include <AvailabilityMacros.h>
-#include <mach/mach_time.h>
 #endif
 
 #if defined(_WIN32)
@@ -509,27 +507,6 @@ int64_t ggml_time_us(void) {
     LARGE_INTEGER t;
     QueryPerformanceCounter(&t);
     return ((t.QuadPart-timer_start) * 1000000) / timer_freq;
-}
-#elif !defined(MAC_OS_VERSION_10_12) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_VERSION_10_12
-void ggml_time_init(void) {}
-
-int64_t ggml_time_ms(void) {
-    static mach_timebase_info_data_t timebase = {0, 0};
-    if (timebase.denom == 0) {
-        mach_timebase_info(&timebase);
-    }
-    uint64_t t = mach_absolute_time();
-    // do the division before the final scale to reduce overflow risk
-    return (int64_t)((t / 1000000) * timebase.numer / timebase.denom);
-}
-
-int64_t ggml_time_us(void) {
-    static mach_timebase_info_data_t timebase = {0, 0};
-    if (timebase.denom == 0) {
-        mach_timebase_info(&timebase);
-    }
-    uint64_t t = mach_absolute_time();
-    return (int64_t)((t / 1000) * timebase.numer / timebase.denom);
 }
 #else
 void ggml_time_init(void) {}
