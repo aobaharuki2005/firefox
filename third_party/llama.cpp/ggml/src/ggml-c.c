@@ -41,6 +41,8 @@
 #include <unistd.h>
 #include <mach/mach.h>
 #include <TargetConditionals.h>
+#include <AvailabilityMacros.h>
+#include <mach/mach_time.h>
 #endif
 
 #if defined(_WIN32)
@@ -511,15 +513,22 @@ int64_t ggml_time_us(void) {
 #else
 void ggml_time_init(void) {}
 int64_t ggml_time_ms(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (int64_t)ts.tv_sec*1000 + (int64_t)ts.tv_nsec/1000000;
+    static mach_timebase_info_data_t timebase = {0, 0};
+    if (timebase.denom == 0) {
+        mach_timebase_info(&timebase);
+    }
+    uint64_t t = mach_absolute_time();
+    // do the division before the final scale to reduce overflow risk
+    return (int64_t)((t / 1000000) * timebase.numer / timebase.denom);
 }
 
 int64_t ggml_time_us(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (int64_t)ts.tv_sec*1000000 + (int64_t)ts.tv_nsec/1000;
+    static mach_timebase_info_data_t timebase = {0, 0};
+    if (timebase.denom == 0) {
+        mach_timebase_info(&timebase);
+    }
+    uint64_t t = mach_absolute_time();
+    return (int64_t)((t / 1000) * timebase.numer / timebase.denom);
 }
 #endif
 
