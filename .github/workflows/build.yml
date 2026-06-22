@@ -13,7 +13,7 @@ jobs:
   macos1007-1008:
     name: build for macOS 10.7-10.8
     runs-on: macos-26
-    if: ${{ !endsWith(github.event.head_commit.message, 'DONTBUILD') }}
+    if: ${{ !endsWith(github.event.head_commit.message, 'DONTBUILD') && !endsWith(github.event.head_commit.message, 'IGNORE10071008') }}
     steps:
       - name: Checkout
         id: checkout
@@ -167,7 +167,7 @@ jobs:
   macos1009-1011:
     name: build for macOS 10.9-10.11
     runs-on: macos-26
-    if: ${{ !endsWith(github.event.head_commit.message, 'DONTBUILD') }}
+    if: ${{ !endsWith(github.event.head_commit.message, 'DONTBUILD') && !endsWith(github.event.head_commit.message, 'IGNORE10091011') }}
     steps:
       - name: Checkout
         id: checkout
@@ -283,8 +283,8 @@ jobs:
           else
             hdiutil attach -noverify "obj-ff-dbg/dist/momiji-${VERSION}.en-US.mac.dmg"  
             cp -R /Volumes/Momiji/Momiji.app /tmp 
-          fi
-          
+          fi         
+         
           # Package the output app
           cd /tmp
           if [ "$BRAND" = "Nightly" ]; then
@@ -304,7 +304,7 @@ jobs:
   macos1012-1014:
     name: build for macOS 10.12-10.14
     runs-on: macos-26
-    if: ${{ !endsWith(github.event.head_commit.message, 'DONTBUILD') }}
+    if: ${{ !endsWith(github.event.head_commit.message, 'DONTBUILD') && !endsWith(github.event.head_commit.message, 'IGNORE10121014') }}
     steps:
       - name: Checkout
         id: checkout
