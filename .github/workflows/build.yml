@@ -5,6 +5,10 @@ on:
     branches:
       - '*test'
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   macos1007-1008:
     name: build for macOS 10.7-10.8
@@ -24,6 +28,12 @@ jobs:
           path: ~/Library/Caches/Mozilla.sccache 
           key: ${{ runner.os }}-ld64-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-ld64-
+      
+      - name: Evict old sccache caches from previous sessions
+        if: steps.restore-sccache-cache.outputs.cache-matched-key != '' && steps.restore-sccache-cache.outputs.cache-matched-key != steps.restore-sccache-cache.outputs.cache-primary-key
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh cache delete "${{ steps.restore-sccache-cache.outputs.cache-matched-key }}"
       
       - name: Restore cached mozbuild toolchains
         id: restore-mozbuild-cache
@@ -186,6 +196,12 @@ jobs:
           key: ${{ runner.os }}-lld-1009-1011-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-lld-1009-1011
       
+      - name: Evict old sccache caches from previous sessions
+        if: steps.restore-sccache-cache.outputs.cache-matched-key != '' && steps.restore-sccache-cache.outputs.cache-matched-key != steps.restore-sccache-cache.outputs.cache-primary-key
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh cache delete "${{ steps.restore-sccache-cache.outputs.cache-matched-key }}"
+      
       - name: Restore cached mozbuild toolchains
         id: restore-mozbuild-cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
@@ -335,6 +351,12 @@ jobs:
           path: ~/Library/Caches/Mozilla.sccache 
           key: ${{ runner.os }}-lld-1012-1014-${{ github.run_id }}
           restore-keys: ${{ runner.os }}-lld-1012-1014
+      
+      - name: Evict old sccache caches from previous sessions
+        if: steps.restore-sccache-cache.outputs.cache-matched-key != '' && steps.restore-sccache-cache.outputs.cache-matched-key != steps.restore-sccache-cache.outputs.cache-primary-key
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh cache delete "${{ steps.restore-sccache-cache.outputs.cache-matched-key }}"
       
       - name: Restore cached mozbuild toolchains
         id: restore-mozbuild-cache
