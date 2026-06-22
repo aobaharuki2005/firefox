@@ -30,7 +30,8 @@ export NODEJS="$HOME/.mozbuild/node/bin/node"
 ac_add_options --with-branding=browser/branding/unofficial
 
 # ========== RUST ==========    
-export RUST_BIN_PATH="$HOME/.rustup/toolchains/nightly-2025-08-07-aarch64-apple-darwin/bin"
+export RUST_VERSION="1.90.0"    
+export RUST_BIN_PATH="$HOME/.rustup/toolchains/${RUST_VERSION}-custom-aarch64/bin"
 export RUSTC="$RUST_BIN_PATH/rustc"
 export CARGO="$RUST_BIN_PATH/cargo"
 export CBINDGEN="$HOME/.mozbuild/cbindgen/cbindgen"
