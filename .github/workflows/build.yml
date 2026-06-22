@@ -140,10 +140,8 @@ jobs:
           fi         
 
           if [ "$BRAND" = "Nightly" ]; then
-            cp lib/libMacportsLegacySystem.B.dylib /tmp/Nightly.app/Contents/MacOS
             cd /tmp/Nightly.app/Contents/MacOS/  # Nightly
           else
-            cp lib/libMacportsLegacySystem.B.dylib /tmp/Momiji.app/Contents/MacOS
             cd /tmp/Momiji.app/Contents/MacOS/   # Momiji
           fi
           
@@ -285,14 +283,6 @@ jobs:
           else
             hdiutil attach -noverify "obj-ff-dbg/dist/momiji-${VERSION}.en-US.mac.dmg"  
             cp -R /Volumes/Momiji/Momiji.app /tmp 
-          fi         
-
-          if [ "$BRAND" = "Nightly" ]; then
-            cp lib/libMacportsLegacySystem.B.dylib /tmp/Nightly.app/Contents/MacOS
-            cd /tmp/Nightly.app/Contents/MacOS/  # Nightly
-          else
-            cp lib/libMacportsLegacySystem.B.dylib /tmp/Momiji.app/Contents/MacOS
-            cd /tmp/Momiji.app/Contents/MacOS/   # Momiji
           fi
           
           # Package the output app
