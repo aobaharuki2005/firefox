@@ -21,16 +21,11 @@
 #endif
 
 #if defined(XP_UNIX)
+#include <sys/time.h>
 int64_t js::PRMJ_Now() {
-  // `std::timespec_get(..., TIME_UTC)` is available since C++17, but it's
-  // slightly slower than `clock_gettime(CLOCK_REALTIME, ...)`, so prefer the
-  // latter.
-
-  timespec ts;
-  MOZ_ALWAYS_TRUE(clock_gettime(CLOCK_REALTIME, &ts) == 0);
-
-  return int64_t(ts.tv_sec) * PRMJ_USEC_PER_SEC +
-         int64_t(ts.tv_nsec / PRMJ_NSEC_PER_USEC);
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  return int64_t(tv.tv_sec) * PRMJ_USEC_PER_SEC + int64_t(tv.tv_usec);
 }
 
 #elif defined(XP_WIN)
