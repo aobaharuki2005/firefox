@@ -118,7 +118,7 @@ jobs:
         id: polyfill-and-repkg
         run: |
           # Choose your branding here, Momiji or Nightly
-          export BRAND="Nightly"
+          export BRAND=Momiji
           # Get the current Momiji version
           export VERSION=$(cat browser/config/version.txt)
 
@@ -277,7 +277,7 @@ jobs:
         id: polyfill-and-repkg
         run: |
           # Choose your branding here, Momiji or Nightly
-          export BRAND="Nightly"
+          export BRAND=Momiji
           # Get the current Momiji version
           export VERSION=$(cat browser/config/version.txt)
 
@@ -419,7 +419,7 @@ jobs:
         id: polyfill-and-repkg
         run: |
           # Choose your branding here, Momiji or Nightly
-          export BRAND="Nightly"
+          export BRAND=Momiji
           # Get the current Momiji version
           export VERSION=$(cat browser/config/version.txt)
 
