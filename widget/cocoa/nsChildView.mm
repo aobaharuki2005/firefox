@@ -2857,10 +2857,12 @@ static void DrawTopLeftCornerMask(CGContextRef aCtx, int aRadius) {
     switch (eventPhase) {
       case NSEventPhaseBegan: {
         pinchGestureType = PinchGestureInput::PINCHGESTURE_START;
+        mGestureState = eGestureState_MagnifyGesture;
         break;
       }
       case NSEventPhaseChanged: {
         pinchGestureType = PinchGestureInput::PINCHGESTURE_SCALE;
+        mGestureState = eGestureState_MagnifyGesture;
         break;
       }
       case NSEventPhaseEnded: {
@@ -2876,12 +2878,13 @@ static void DrawTopLeftCornerMask(CGContextRef aCtx, int aRadius) {
   } else {
     // rely on the state set by beginGestureWithEvent
     if (mGestureState == eGestureState_StartGesture) {
-      pinchGestureType = PinchGestureInput::PINCHGESTURE_START;
+       pinchGestureType = PinchGestureInput::PINCHGESTURE_START;
+       mGestureState = eGestureState_MagnifyGesture;
     } else {
-      pinchGestureType = PinchGestureInput::PINCHGESTURE_SCALE;
-    }
-  }
-  mGestureState = eGestureState_MagnifyGesture;
+       pinchGestureType = PinchGestureInput::PINCHGESTURE_SCALE;
+       mGestureState = eGestureState_MagnifyGesture;
+     }
+   }
 
   PinchGestureInput event{pinchGestureType,
                           PinchGestureInput::TRACKPAD,
