@@ -920,19 +920,22 @@ struct RoleDescrComparator {
                                  : nullptr;
   if (maybeRoot && maybeRoot->IsRoot() &&
       [[self moxDOMIdentifier] isEqualToString:@"a11y-announcement"]) {
-    nsAutoString name;
-    // Our actual announcement should be stored as a child of the alert.
-    if (Accessible* announcement = mGeckoAccessible->FirstChild()) {
-      announcement->Name(name);
+    // Our actual announcement should be stored as a child of the alert,
+    // so we verify a child exists, and then query that child below.
+    NSArray* children = [self moxChildren];
+    MOZ_ASSERT([children count] == 1 && [children objectAtIndex:0],
+               "A11yUtil event received, but no announcement found?");
+
+    mozAccessible* announcement = [children objectAtIndex:0];
+    NSString* key;
+    if ([announcement providesLabelNotTitle]) {
+      key = [announcement moxLabel];
     } else {
-      MOZ_ASSERT_UNREACHABLE(
-          "A11yUtil event received, but no announcement found?");
+      key = [announcement moxTitle];
     }
 
     NSDictionary* info = @{
-      NSAccessibilityAnnouncementKey : name.IsEmpty()
-          ? @("")
-          : nsCocoaUtils::ToNSString(name),
+      NSAccessibilityAnnouncementKey : key ? key : @(""),
       // High priority means VO will stop what it is currently speaking
       // to speak our announcement.
       NSAccessibilityPriorityKey : @(NSAccessibilityPriorityHigh)
@@ -1006,7 +1009,7 @@ struct RoleDescrComparator {
           static_cast<MOXTextMarkerDelegate*>([self moxTextMarkerDelegate]);
       NSMutableDictionary* userInfo =
           [[[delegate selectionChangeInfo] mutableCopy] autorelease];
-      userInfo[@"AXTextChangeElement"] = self;
+      [userInfo setObject:self forKey:@"AXTextChangeElement"];
 
       mozAccessible* webArea = [self topWebArea];
       [webArea

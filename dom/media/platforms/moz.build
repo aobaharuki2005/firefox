@@ -89,15 +89,19 @@ if CONFIG["MOZ_APPLEMEDIA"]:
     EXPORTS += [
         "apple/AppleDecoderModule.h",
         "apple/AppleEncoderModule.h",
-        "apple/AppleUtils.h",
     ]
     UNIFIED_SOURCES += [
         "apple/AppleATDecoder.cpp",
+        "apple/AppleCMLinker.cpp",
+        "apple/AppleCVLinker.cpp",
         "apple/AppleDecoderModule.cpp",
         "apple/AppleEncoderModule.cpp",
-        "apple/AppleUtils.cpp",
+        'apple/AppleUtils.cpp',
+        'apple/AppleVDADecoder.cpp',
+        'apple/AppleVDALinker.cpp',
         "apple/AppleVTDecoder.cpp",
         "apple/AppleVTEncoder.cpp",
+        "apple/AppleVTLinker.cpp",
     ]
     LOCAL_INCLUDES += [
         "/media/libyuv/libyuv/include",
@@ -106,6 +110,7 @@ if CONFIG["MOZ_APPLEMEDIA"]:
         "-framework AudioToolbox",
         "-framework CoreMedia",
         "-framework VideoToolbox",
+        "-framework VideoDecodeAcceleration",
         # For some unknown reason, the documented method of using weak_import
         # attribute doesn't work with VideoToolbox's functions.
         # We want to lazily load _VTRegisterSupplementalVideoDecoderIfAvailable

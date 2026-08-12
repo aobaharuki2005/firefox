@@ -40,7 +40,7 @@ impl ComputePassSampleBufferAttachmentDescriptorArrayRef {
         &self,
         index: NSUInteger,
     ) -> Option<&ComputePassSampleBufferAttachmentDescriptorRef> {
-        unsafe { msg_send![self, objectAtIndexedSubscript: index] }
+        unsafe { msg_send![self, objectAtIndex: index] }
     }
 
     pub fn set_object_at(
@@ -50,7 +50,7 @@ impl ComputePassSampleBufferAttachmentDescriptorArrayRef {
     ) {
         unsafe {
             msg_send![self, setObject:attachment
-                     atIndexedSubscript:index]
+                     atIndex:index]
         }
     }
 }

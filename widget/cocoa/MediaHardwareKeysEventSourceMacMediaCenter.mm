@@ -208,12 +208,13 @@ void MediaHardwareKeysEventSourceMacMediaCenter::SetMediaMetadata(
                      forKey:MPMediaItemPropertyAlbumTitle];
   if (mCurrentImageUrl.IsEmpty() ||
       !IsImageIn(aMetadata.mArtwork, mCurrentImageUrl)) {
-    [nowPlayingInfo removeObjectForKey:MPMediaItemPropertyArtwork];
-
+    if(@available(macos 10.13.2, *)) {
+      [nowPlayingInfo removeObjectForKey:MPMediaItemPropertyArtwork];
+    }
     if (mFetchingUrl.IsEmpty() ||
         !IsImageIn(aMetadata.mArtwork, mFetchingUrl)) {
-      mNextImageIndex = 0;
-      LoadImageAtIndex(mNextImageIndex++);
+        mNextImageIndex = 0;
+        LoadImageAtIndex(mNextImageIndex++);
     }
   }
 
@@ -327,11 +328,10 @@ void MediaHardwareKeysEventSourceMacMediaCenter::LoadImageAtIndex(
                     requestHandler:^NSImage* _Nonnull(CGSize aSize) {
                       return image;
                     }];
-            [nowPlayingInfo setObject:artwork
-                               forKey:MPMediaItemPropertyArtwork];
-            [artwork release];
-            [image release];
-
+            if(@available(macOS 10.13.2, *)) {
+              [nowPlayingInfo setObject:artwork
+                                 forKey:MPMediaItemPropertyArtwork];
+            }
             center.nowPlayingInfo = nowPlayingInfo;
 
             mFetchingUrl.Truncate();

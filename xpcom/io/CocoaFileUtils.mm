@@ -5,12 +5,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "CocoaFileUtils.h"
+#include "nsCocoaFeatures.h"
 #include "nsCocoaUtils.h"
 #include <Cocoa/Cocoa.h>
 #include "nsObjCExceptions.h"
 #include "nsDebug.h"
 #include "nsString.h"
 #include "mozilla/MacStringHelpers.h"
+
+// Need to cope with us using old versions of the SDK and needing this on 10.10+
+#if !defined(MAC_OS_X_VERSION_10_10) || (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_10)
+const CFStringRef kCFURLQuarantinePropertiesKey = CFSTR("NSURLQuarantinePropertiesKey");
+#endif
 
 namespace CocoaFileUtils {
 
@@ -210,6 +216,13 @@ void AddOriginMetadataToFile(const CFStringRef filePath,
   ::CFRelease(mdItem);
 }
 
+static CFStringRef GetQuarantinePropKey() {
+  if (nsCocoaFeatures::OnYosemiteOrLater()) {
+    return kCFURLQuarantinePropertiesKey;
+  }
+  return kLSItemQuarantineProperties;
+}
+
 // Can be called off of the main thread.
 static CFMutableDictionaryRef CreateQuarantineDictionary(
     const CFURLRef aFileURL, const bool aCreateProps) {
@@ -222,7 +235,7 @@ static CFMutableDictionaryRef CreateQuarantineDictionary(
                                            &kCFTypeDictionaryValueCallBacks);
   } else {
     Boolean success = ::CFURLCopyResourcePropertyForKey(
-        aFileURL, kCFURLQuarantinePropertiesKey, &quarantineProps, NULL);
+        aFileURL, GetQuarantinePropKey(), &quarantineProps, NULL);
     // If there aren't any quarantine properties then the user probably
     // set up an exclusion and we don't need to add metadata.
     if (!success || !quarantineProps) {
