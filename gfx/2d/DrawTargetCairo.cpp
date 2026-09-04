@@ -1701,9 +1701,7 @@ void DrawTargetCairo::PushClipRect(const Rect& aRect) {
 }
 
 void DrawTargetCairo::PopClip() {
-  if (NS_WARN_IF(mClipDepth <= 0)) {
-    return;
-  }
+  MOZ_ASSERT(mClipDepth > 0);
 
   if (!IsValid()) {
     gfxCriticalNote << "PopClip with bad surface "

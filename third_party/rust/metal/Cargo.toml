@@ -153,6 +153,9 @@ version = "0.2.4"
 [dependencies.paste]
 version = "1"
 
+[dependencies.whatsys]
+version = "0.3"
+
 [dev-dependencies.cocoa]
 version = "0.25.0"
 
