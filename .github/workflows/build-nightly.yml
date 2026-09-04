@@ -1,4 +1,4 @@
-name: build official Momiji
+name: build testing Nightly
 
 on: 
   push:
