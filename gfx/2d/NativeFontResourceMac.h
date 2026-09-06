@@ -24,7 +24,9 @@ class NativeFontResourceMac final : public NativeFontResource {
       uint32_t aInstanceDataLength) final;
 
   ~NativeFontResourceMac() {
-    CFRelease(mFontDescRef);
+    if (mFontDescRef) {
+      CFRelease(mFontDescRef);
+    }
     CFRelease(mFontRef);
   }
 

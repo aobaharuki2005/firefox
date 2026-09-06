@@ -922,7 +922,7 @@ void CTFontFamily::FindStyleVariationsLocked(FontInfoData* aFontInfoData) {
                                         LAYOUT, mName);
 
   if (mForSystemFont) {
-    MOZ_ASSERT(gfxPlatform::HasVariationFontSupport());
+    const bool hasVariationSupport = gfxPlatform::HasVariationFontSupport();
 
     auto addToFamily = [&](CTFontRef aFont) MOZ_REQUIRES(mLock) {
       AutoCFTypeRef<CFStringRef> psName(CTFontCopyPostScriptName(aFont));
@@ -931,27 +931,55 @@ void CTFontFamily::FindStyleVariationsLocked(FontInfoData* aFontInfoData) {
       GetStringForCFString(psName, nameUTF16);
       CopyUTF16toUTF8(nameUTF16, nameUTF8);
 
-      auto* fe =
-          new CTFontEntry(nameUTF8, WeightRange(FontWeight::NORMAL), true, 0.0);
+      for (const auto& existing : mAvailableFonts) {
+        if (existing && existing->Name() == nameUTF8) {
+          return;
+        }
+      }
+
+      CTFontSymbolicTraits traits = CTFontGetSymbolicTraits(aFont);
+      FontWeight weight = traits & kCTFontTraitBold ? FontWeight::BOLD
+                                                    : FontWeight::NORMAL;
+      auto* fe = new CTFontEntry(nameUTF8, WeightRange(weight), true, 0.0);
 
       // Set the appropriate style, assuming it may not have a variation range.
-      CTFontSymbolicTraits traits = CTFontGetSymbolicTraits(aFont);
       fe->mStyleRange = SlantStyleRange((traits & kCTFontTraitItalic)
                                             ? FontSlantStyle::ITALIC
                                             : FontSlantStyle::NORMAL);
 
       // Set up weight (and width, if present) ranges.
-      fe->SetupVariationRanges();
+      if (hasVariationSupport) {
+        fe->SetupVariationRanges();
+      }
       AddFontEntryLocked(fe);
     };
 
     addToFamily(mForSystemFont);
 
+    if (!hasVariationSupport) {
+      AutoCFTypeRef<CTFontRef> boldFont(CTFontCreateCopyWithSymbolicTraits(
+          mForSystemFont, 0.0, nullptr, kCTFontTraitBold, kCTFontTraitBold));
+      if (boldFont) {
+        addToFamily(boldFont);
+      }
+    }
+
     // See if there is a corresponding italic face, and add it to the family.
     AutoCFTypeRef<CTFontRef> italicFont(CTFontCreateCopyWithSymbolicTraits(
         mForSystemFont, 0.0, nullptr, kCTFontTraitItalic, kCTFontTraitItalic));
-    if (italicFont != mForSystemFont) {
+    if (italicFont && italicFont != mForSystemFont) {
       addToFamily(italicFont);
+    }
+
+    if (!hasVariationSupport) {
+      constexpr CTFontSymbolicTraits kBoldItalic =
+          kCTFontTraitBold | kCTFontTraitItalic;
+      AutoCFTypeRef<CTFontRef> boldItalicFont(
+          CTFontCreateCopyWithSymbolicTraits(mForSystemFont, 0.0, nullptr,
+                                             kBoldItalic, kBoldItalic));
+      if (boldItalicFont) {
+        addToFamily(boldItalicFont);
+      }
     }
 
     CFRelease(mForSystemFont);
@@ -1123,8 +1151,13 @@ void CoreTextFontList::ActivateFontsFromDir(
     }
   } while (result != kCFURLEnumeratorEnd);
 
-  CTFontManagerRegisterFontURLs(urls, kCTFontManagerScopeProcess, false,
-                                nullptr);
+  if (__builtin_available(macOS 10.15, *)) {
+    CTFontManagerRegisterFontURLs(urls, kCTFontManagerScopeProcess, false,
+                                  nullptr);
+  } else {
+    CTFontManagerRegisterFontsForURLs(urls, kCTFontManagerScopeProcess,
+                                      nullptr);
+  }
 }
 
 void CoreTextFontList::ReadSystemFontList(dom::SystemFontList* aList)

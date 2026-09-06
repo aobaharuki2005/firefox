@@ -27,6 +27,9 @@ nsMacFinderProgress::Init(
     nsIMacFinderProgressCanceledCallback* cancellationCallback) {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
+  //APPUL docs say 10.9, but mountain lion has it too, so i dunno
+  //10.7 def crashing on this tho.
+  if(@available(macOS 10.8, *)) {
   NSURL* pathUrl = [NSURL
       fileURLWithPath:[NSString
                           stringWithCharacters:reinterpret_cast<const unichar*>(
@@ -55,7 +58,9 @@ nsMacFinderProgress::Init(
   };
 
   [mProgress publish];
-
+  } else {
+    mProgress = NULL;
+  }
   return NS_OK;
 
   NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);

@@ -1221,8 +1221,12 @@ Result<Ok, LaunchError> PosixProcessLauncher::DoSetup() {
     nsCString new_dyld_lib_path(path.get());
     if (PR_GetEnv("MOZ_RUN_GTEST")) {
       new_dyld_lib_path = path + "/gtest:"_ns + new_dyld_lib_path;
-      mLaunchOptions->env_map["DYLD_LIBRARY_PATH"] = new_dyld_lib_path.get();
     }
+
+    // dyld versions used by legacy macOS do not resolve all bundled
+    // libraries through the modern executable-relative install names. Make
+    // the application directory explicit for every child process.
+    mLaunchOptions->env_map["DYLD_LIBRARY_PATH"] = new_dyld_lib_path.get();
 
     // DYLD_INSERT_LIBRARIES is currently unused by default but we allow
     // it to be set by the external environment.
@@ -1535,9 +1539,24 @@ RefPtr<ProcessLaunchPromise> MacProcessLauncher::DoLaunch() {
       XRE_GetAsyncIOEventTarget(), __func__,
       [self = RefPtr{this}](
           LaunchResults&& aResults) -> RefPtr<ProcessLaunchPromise> {
-        // Wait for the child process to send us its 'task_t' data, then
-        // send it the mach send/receive rights which are being passed on
-        // the commandline.
+#if defined(MOZ_LEGACY_MACOS)
+        // The asynchronous check-in listener uses the kqueue message pump,
+        // whose implementation depends on APIs newer than Lion. Perform the
+        // same bounded Mach handshake synchronously on the IPC I/O thread.
+        constexpr mach_msg_timeout_t kCheckInTimeoutMs = 10000;
+        auto result = MachHandleProcessCheckIn(
+            self->mParentRecvPort.get(), base::GetProcId(aResults.mHandle),
+            kCheckInTimeoutMs, self->mChildArgs.mSendRights,
+            self->mChildArgs.mReceiveRights, &aResults.mChildTask);
+        if (result.isErr()) {
+          return ProcessLaunchPromise::CreateAndReject(result.unwrapErr(),
+                                                       __func__);
+        }
+        return ProcessLaunchPromise::CreateAndResolve(std::move(aResults),
+                                                      __func__);
+#else
+        // Wait for the child process to send us its 'task_t' data, then send it
+        // the Mach rights supplied on the command line.
         return MachHandleProcessCheckIn(
                    std::move(self->mParentRecvPort),
                    base::GetProcId(aResults.mHandle),
@@ -1546,7 +1565,7 @@ RefPtr<ProcessLaunchPromise> MacProcessLauncher::DoLaunch() {
                    std::move(self->mChildArgs.mReceiveRights))
             ->Then(
                 XRE_GetAsyncIOEventTarget(), __func__,
-                [self, results = std::move(aResults)](task_t aTask) mutable {
+                [results = std::move(aResults)](task_t aTask) mutable {
                   results.mChildTask = aTask;
                   return ProcessLaunchPromise::CreateAndResolve(
                       std::move(results), __func__);
@@ -1555,6 +1574,7 @@ RefPtr<ProcessLaunchPromise> MacProcessLauncher::DoLaunch() {
                   return ProcessLaunchPromise::CreateAndReject(aError,
                                                                __func__);
                 });
+#endif
       },
       [](LaunchError aError) {
         return ProcessLaunchPromise::CreateAndReject(aError, __func__);

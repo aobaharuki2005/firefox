@@ -5,6 +5,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "nsMacUserActivityUpdater.h"
+#include "SDKDeclarations.h"
 
 #include "nsCocoaUtils.h"
 #include "nsIBaseWindow.h"
@@ -22,6 +23,7 @@ nsMacUserActivityUpdater::UpdateLocation(const nsAString& aPageUrl,
     return NS_OK;
   }
 
+  if(@available(macOS 10.10, *)) {
   BaseWindow* cocoaWin = nsMacUserActivityUpdater::GetCocoaWindow(aWindow);
   if (!cocoaWin) {
     return NS_ERROR_FAILURE;
@@ -45,7 +47,7 @@ nsMacUserActivityUpdater::UpdateLocation(const nsAString& aPageUrl,
   userActivity.title = pageTitle;
   cocoaWin.userActivity = userActivity;
   [userActivity release];
-
+  }
   return NS_OK;
 
   NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
