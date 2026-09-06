@@ -146,6 +146,7 @@ jobs:
           install_name_tool -change "/usr/lib/libSystem.B.dylib" "@executable_path/libMacportsLegacySystem.B.dylib" "libmozglue.dylib"
 
           # Package the output app
+          cd /tmp
           zip -qr "Nightly-${VERSION}_macOS10.7-10.8.zip" Nightly.app
       
       - name: Upload Nightly for macOS 10.7-10.8 build
@@ -286,6 +287,7 @@ jobs:
           install_name_tool -change "/usr/lib/libSystem.B.dylib" "@executable_path/libMacportsLegacySystem.B.dylib" "libmozglue.dylib"
 
           # Package the output app
+          cd /tmp
           zip -qr "Nightly-${VERSION}_macOS10.9-10.11.zip" Nightly.app
       
       - name: Upload Nightly for macOS 10.9-10.11 build
@@ -390,7 +392,8 @@ jobs:
 
           hdiutil attach -noverify "obj-ff-dbg-esr/dist/firefox-${VERSION}.en-US.mac.dmg"  
           cp -R /Volumes/Nightly/Nightly.app /tmp        
-
+          
+          cd /tmp
           zip -qr "Nightly-${VERSION}_macOS10.12-10.14.zip" Nightly.app
       
       - name: Saving sccache
