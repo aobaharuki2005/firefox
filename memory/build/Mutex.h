@@ -11,7 +11,12 @@
 #  include <pthread.h>
 #endif
 #if defined(XP_DARWIN)
-#  include <os/lock.h>
+#  include <Availability.h>
+#  if __MAC_OS_X_VERSION_MIN_REQUIRED < 101500
+#    include <libkern/OSAtomic.h>
+#  else
+#    include <os/lock.h>
+#  endif
 #endif
 
 #include "mozilla/Assertions.h"
@@ -19,7 +24,7 @@
 #include "mozilla/MaybeStorageBase.h"
 #include "mozilla/ThreadSafety.h"
 
-#if defined(XP_DARWIN)
+#if defined(XP_DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 // For information about the following undocumented flags and functions see
 // https://github.com/apple/darwin-xnu/blob/main/bsd/sys/ulock.h and
 // https://github.com/apple/darwin-libplatform/blob/main/private/os/lock_private.h
@@ -33,7 +38,7 @@ OS_UNFAIR_LOCK_AVAILABILITY
 OS_EXPORT OS_NOTHROW OS_NONNULL_ALL void os_unfair_lock_lock_with_options(
     os_unfair_lock_t lock, os_unfair_lock_options_t options);
 }
-#endif  // defined(XP_DARWIN)
+#endif
 
 // Mutexes are based on spinlocks.  We can't use normal pthread spinlocks in all
 // places, because they require malloc()ed memory, which causes bootstrapping
@@ -48,6 +53,8 @@ struct MOZ_CAPABILITY("mutex") Mutex {
 #if defined(XP_WIN)
   // MaybeStorageBase provides a constexpr constructor.
   mozilla::detail::MaybeStorageBase<CRITICAL_SECTION> mMutex;
+#elif defined(XP_DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101500
+  OSSpinLock mMutex = OS_SPINLOCK_INIT;
 #elif defined(XP_DARWIN)
   os_unfair_lock mMutex = OS_UNFAIR_LOCK_INIT;
 #elif defined(XP_LINUX) && !defined(ANDROID)
@@ -78,6 +85,8 @@ struct MOZ_CAPABILITY("mutex") Mutex {
     if (!InitializeCriticalSectionAndSpinCount(mMutex.addr(), 5000)) {
       return false;
     }
+#elif defined(XP_DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101500
+    mMutex = OS_SPINLOCK_INIT;
 #elif defined(XP_DARWIN)
     mMutex = OS_UNFAIR_LOCK_INIT;
 #elif defined(XP_LINUX) && !defined(ANDROID)
@@ -104,6 +113,8 @@ struct MOZ_CAPABILITY("mutex") Mutex {
 
 #if defined(XP_WIN)
     EnterCriticalSection(mMutex.addr());
+#elif defined(XP_DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101500
+    OSSpinLockLock(&mMutex);
 #elif defined(XP_DARWIN)
     // We rely on a non-public function to improve performance here.
     // The OS_UNFAIR_LOCK_DATA_SYNCHRONIZATION flag informs the kernel that
@@ -127,6 +138,8 @@ struct MOZ_CAPABILITY("mutex") Mutex {
 
 #if defined(XP_WIN)
     LeaveCriticalSection(mMutex.addr());
+#elif defined(XP_DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101500
+    OSSpinLockUnlock(&mMutex);
 #elif defined(XP_DARWIN)
     os_unfair_lock_unlock(&mMutex);
 #else
@@ -134,10 +147,6 @@ struct MOZ_CAPABILITY("mutex") Mutex {
 #endif
   }
 
-#if defined(XP_DARWIN)
-  static bool SpinInKernelSpace();
-  static const bool gSpinInKernelSpace;
-#endif  // XP_DARWIN
 };
 
 // Mutex that can be used for static initialization.

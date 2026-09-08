@@ -13,6 +13,8 @@ bool Mutex::TryLock() {
 
 #if defined(XP_WIN)
   return !!TryEnterCriticalSection(mMutex.addr());
+#elif defined(XP_DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101500
+  return OSSpinLockTry(&mMutex);
 #elif defined(XP_DARWIN)
   return os_unfair_lock_trylock(&mMutex);
 #else

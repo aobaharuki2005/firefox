@@ -189,9 +189,15 @@ void DeviceInfoAvFoundation::EnsureCapabilitiesMap() {
     return;
   }
 
-  for (AVCaptureDevice* device in [RTCCameraVideoCapturer
-           captureDevicesWithDeviceTypes:[RTCCameraVideoCapturer
-                                             defaultCaptureDeviceTypes]]) {
+  NSArray<AVCaptureDevice*>* devices;
+  if (@available(macOS 10.15, *)) {
+    devices = [RTCCameraVideoCapturer
+        captureDevicesWithDeviceTypes:
+            [RTCCameraVideoCapturer defaultCaptureDeviceTypes]];
+  } else {
+    devices = [RTCCameraVideoCapturer legacyCaptureDevices];
+  }
+  for (AVCaptureDevice* device in devices) {
     std::string uniqueId = [NSString stdStringForString:device.uniqueID];
     std::string name = [NSString stdStringForString:device.localizedName];
     auto& [_, __, capabilities] = mDevicesAndCapabilities.emplace_back(

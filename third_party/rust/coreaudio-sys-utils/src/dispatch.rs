@@ -15,6 +15,48 @@ use std::time::Instant;
 
 pub const DISPATCH_QUEUE_LABEL: &str = "org.mozilla.cubeb";
 
+#[cfg(debug_assertions)]
+type DispatchQueueAssertion = unsafe extern "C" fn(dispatch_queue_t);
+
+#[cfg(debug_assertions)]
+unsafe extern "C" {
+    fn dlsym(handle: *mut c_void, symbol: *const i8) -> *mut c_void;
+}
+
+#[cfg(debug_assertions)]
+fn resolve_dispatch_queue_assertion(symbol: &'static [u8]) -> Option<DispatchQueueAssertion> {
+    let function = unsafe {
+        dlsym(
+            (-2isize) as *mut c_void,
+            symbol.as_ptr().cast(),
+        )
+    };
+    if function.is_null() {
+        None
+    } else {
+        Some(unsafe { mem::transmute(function) })
+    }
+}
+
+#[cfg(debug_assertions)]
+fn debug_assert_dispatch_queue(queue: dispatch_queue_t, should_be_current: bool) {
+    static ASSERT_QUEUE: OnceLock<Option<DispatchQueueAssertion>> = OnceLock::new();
+    static ASSERT_QUEUE_NOT: OnceLock<Option<DispatchQueueAssertion>> = OnceLock::new();
+
+    let assertion = if should_be_current {
+        ASSERT_QUEUE.get_or_init(|| {
+            resolve_dispatch_queue_assertion(b"dispatch_assert_queue\0")
+        })
+    } else {
+        ASSERT_QUEUE_NOT.get_or_init(|| {
+            resolve_dispatch_queue_assertion(b"dispatch_assert_queue_not\0")
+        })
+    };
+    if let Some(assertion) = *assertion {
+        unsafe { assertion(queue) };
+    }
+}
+
 pub fn get_serial_queue_singleton() -> &'static Queue {
     static SERIAL_QUEUE: OnceLock<Queue> = OnceLock::new();
     SERIAL_QUEUE.get_or_init(|| Queue::new(DISPATCH_QUEUE_LABEL))
@@ -59,18 +101,20 @@ impl Queue {
             ptr::null_mut::<dispatch_queue_attr_s>();
         let label = CString::new(label).unwrap();
         let c_string = label.as_ptr();
-        let queue = {
             let target_guard = target.queue.lock().unwrap();
-            Self {
-                queue: Mutex::new(unsafe {
-                    dispatch_queue_create_with_target(
+        let queue = unsafe {
+            dispatch_queue_create(
                         c_string,
                         DISPATCH_QUEUE_SERIAL,
-                        *target_guard,
                     )
-                }),
+        };
+        unsafe { dispatch_set_target_queue(
+            mem::transmute::<dispatch_queue_t, dispatch_object_t>(queue),
+            *target_guard)
+        };
+        let queue = Self {
+            queue: Mutex::new(queue),
                 owned: AtomicBool::new(true),
-            }
         };
         queue.set_should_cancel(Box::new(AtomicBool::new(false)));
         queue
@@ -90,9 +134,7 @@ impl Queue {
     #[cfg(debug_assertions)]
     pub fn debug_assert_is_current(&self) {
         let guard = self.queue.lock().unwrap();
-        unsafe {
-            dispatch_assert_queue(*guard);
-        }
+        debug_assert_dispatch_queue(*guard, true);
     }
 
     #[cfg(not(debug_assertions))]
@@ -101,9 +143,7 @@ impl Queue {
     #[cfg(debug_assertions)]
     pub fn debug_assert_is_not_current(&self) {
         let guard = self.queue.lock().unwrap();
-        unsafe {
-            dispatch_assert_queue_not(*guard);
-        }
+        debug_assert_dispatch_queue(*guard, false);
     }
 
     #[cfg(not(debug_assertions))]

@@ -16,6 +16,7 @@
 #endif
 
 #include "nsIMemoryReporter.h"
+#include "nsCocoaFeatures.h"
 
 namespace mozilla {
 namespace gfx {
@@ -81,6 +82,33 @@ void NativeFontResourceMac::RegisterMemoryReporter() {
 /* static */
 already_AddRefed<NativeFontResourceMac> NativeFontResourceMac::Create(
     const uint8_t* aFontData, uint32_t aDataLength) {
+  // CTFontManagerCreateFontDescriptorFromData can produce descriptors that
+  // crash inside CoreText when used for downloaded fonts on Mavericks and
+  // earlier. Use the older CGFont data-provider path on those systems.
+  if (!nsCocoaFeatures::OnYosemiteOrLater()) {
+    CFDataRef data =
+        CFDataCreate(kCFAllocatorDefault, aFontData, aDataLength);
+    if (!data) {
+      return nullptr;
+    }
+
+    CGDataProviderRef provider = CGDataProviderCreateWithCFData(data);
+    CFRelease(data);
+    if (!provider) {
+      return nullptr;
+    }
+
+    CGFontRef fontRef = CGFontCreateWithDataProvider(provider);
+    CGDataProviderRelease(provider);
+    if (!fontRef) {
+      return nullptr;
+    }
+
+    RefPtr<NativeFontResourceMac> fontResource =
+        new NativeFontResourceMac(nullptr, fontRef, aDataLength);
+    return fontResource.forget();
+  }
+
   uint8_t* fontData = (uint8_t*)malloc(aDataLength);
   if (!fontData) {
     return nullptr;
@@ -162,8 +190,12 @@ already_AddRefed<NativeFontResourceMac> NativeFontResourceMac::Create(
 already_AddRefed<UnscaledFont> NativeFontResourceMac::CreateUnscaledFont(
     uint32_t aIndex, const uint8_t* aInstanceData,
     uint32_t aInstanceDataLength) {
-  RefPtr unscaledFont =
-      MakeRefPtr<UnscaledFontMac>(mFontDescRef, mFontRef, true);
+  RefPtr<UnscaledFont> unscaledFont;
+  if (mFontDescRef) {
+    unscaledFont = MakeRefPtr<UnscaledFontMac>(mFontDescRef, mFontRef, true);
+  } else {
+    unscaledFont = MakeRefPtr<UnscaledFontMac>(mFontRef, true);
+  }
 
   return unscaledFont.forget();
 }

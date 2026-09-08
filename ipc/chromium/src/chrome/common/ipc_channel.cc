@@ -12,7 +12,7 @@
 #else
 #  include "chrome/common/ipc_channel_posix.h"
 #endif
-#ifdef XP_DARWIN
+#if defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
 #  include "chrome/common/ipc_channel_mach.h"
 #endif
 
@@ -35,7 +35,7 @@ already_AddRefed<Channel> Channel::Create(ChannelHandle pipe, Mode mode,
                                                 other_pid);
 #endif
   }
-#if XP_DARWIN
+#if defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
   if (auto* receive = std::get_if<mozilla::UniqueMachReceiveRight>(&pipe)) {
     return mozilla::MakeAndAddRef<ChannelMach>(std::move(*receive), nullptr,
                                                mode, other_pid);

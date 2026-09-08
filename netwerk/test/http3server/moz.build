@@ -7,10 +7,9 @@ if CONFIG["COMPILE_ENVIRONMENT"]:
         "http3server",
     ]
 
-# Ideally, the build system would set @rpath to be @executable_path as
-# a default for this executable so that this addition to LDFLAGS would not be
-# needed here. Bug 1772575 is filed to implement that.
-if CONFIG["OS_ARCH"] == "Darwin":
+# Apple's ld-classic cannot emit the LC_RPATH load command used here. The
+# legacy macOS build locates bundled libraries through DYLD_LIBRARY_PATH.
+if CONFIG["OS_ARCH"] == "Darwin" and not CONFIG["MOZ_LEGACY_MACOS"]:
     LDFLAGS += ["-Wl,-rpath,@executable_path"]
 
 if CONFIG["MOZ_SYSTEM_NSS"]:

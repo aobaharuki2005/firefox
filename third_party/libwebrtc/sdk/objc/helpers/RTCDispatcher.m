@@ -36,6 +36,10 @@ static dispatch_queue_t kNetworkMonitorQueue = nil;
 
 + (BOOL)isOnQueueForType:(RTCDispatcherQueueType)dispatchType {
   dispatch_queue_t targetQueue = [self dispatchQueueForType:dispatchType];
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_9
+  if (@available(macOS 10.9, *)) {
+#endif
   const char* targetLabel = dispatch_queue_get_label(targetQueue);
   const char* currentLabel =
       dispatch_queue_get_label(DISPATCH_CURRENT_QUEUE_LABEL);
@@ -45,6 +49,11 @@ static dispatch_queue_t kNetworkMonitorQueue = nil;
            @"Label is required for the current queue.");
 
   return strcmp(targetLabel, currentLabel) == 0;
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_9
+  }
+  return dispatch_get_current_queue() == targetQueue;
+#endif
 }
 
 #pragma mark - Private
