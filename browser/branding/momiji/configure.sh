@@ -4,4 +4,4 @@
 
 MOZ_APP_DISPLAYNAME="Momiji-Rolling"
 MOZ_APP_NAME=momiji
-MOZ_MACBUNDLE_ID=momiji
+
