@@ -395,7 +395,7 @@ const CONFIG_PANES = Object.freeze({
   permissionsData: {
     l10nId: "permissions-data-section",
     iconSrc: "chrome://browser/skin/permissions.svg",
-    groupIds: ["permissions", "dataCollection"],
+    groupIds: ["permissions"],
     module: "chrome://browser/content/preferences/config/permissions-data.mjs",
     visible: () => srdSectionEnabled("permissionsData"),
   },
@@ -477,7 +477,6 @@ const CONFIG_PANES = Object.freeze({
       "keyboardShortcuts",
       "media",
       "performance",
-      "recommendations",
     ],
     iconSrc: "chrome://global/skin/icons/cursor-arrow.svg",
     module: "chrome://browser/content/preferences/config/tabs-browsing.mjs",
@@ -639,8 +638,6 @@ function init_all() {
   categories.addEventListener("change-view", event => {
     gotoPref(event.target.view);
   });
-
-  maybeDisplayPoliciesNotice();
 
   window.addEventListener("hashchange", onHashChange);
   window.addEventListener("beforeunload", onBeforeunload);

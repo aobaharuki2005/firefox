@@ -2715,7 +2715,7 @@ const BASE_MESSAGES = () => [
     },
     priority: 3,
     targeting:
-      "'messaging-system-action.easyChecklist.open' | preferenceValue == true",
+      "false",
     triggers: [
       {
         id: "preferenceObserver",

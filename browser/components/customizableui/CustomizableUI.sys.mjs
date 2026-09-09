@@ -770,18 +770,6 @@ var CustomizableUIInternal = {
       }
     }
 
-    // Add firefox-view if not present
-    if (currentVersion < 18) {
-      let tabstripPlacements =
-        gSavedState.placements[CustomizableUI.AREA_TABSTRIP];
-      if (
-        tabstripPlacements &&
-        !tabstripPlacements.includes("firefox-view-button")
-      ) {
-        tabstripPlacements.unshift("firefox-view-button");
-      }
-    }
-
     // Unified Extensions addon button migration, which puts any browser action
     // buttons in the overflow menu into the addons panel instead.
     if (currentVersion < 19) {
