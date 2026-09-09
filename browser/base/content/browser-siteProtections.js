@@ -1835,7 +1835,7 @@ var gProtectionsHandler = {
       this._trackingProtectionIconContainer.hidden = true;
       return;
     }
-    this._trackingProtectionIconContainer.hidden = true;
+    this._trackingProtectionIconContainer.hidden = false;
 
     // Check whether the user has added an exception for this site.
     this.hasException = ContentBlockingAllowList.includes(

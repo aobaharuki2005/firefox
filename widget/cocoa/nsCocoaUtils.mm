@@ -1431,9 +1431,8 @@ nsresult nsCocoaUtils::GetScreenCapturePermissionState(
   return NS_OK;
 }
 
-  LOG("nsIOSPermissionRequest not available on macOS 10.14 and earlier, enable anyway");
-  aPermissionState = nsIOSPermissionRequest::PERMISSION_STATE_AUTHORIZED;
-  return NS_OK;
+  LOG("GetScreenCapturePermissionState(): nothing to do, not on 10.15+");
+  return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 nsresult nsCocoaUtils::RequestVideoCapturePermission(
