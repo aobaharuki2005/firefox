@@ -74,7 +74,6 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
     extra_files = [
         (f"{branding}/firefox.icns", "Resources/firefox.icns"),
         (f"{branding}/document.icns", "Resources/document.icns"),
-        (f"{branding}/Assets.car", "Resources/Assets.car"),
     ]
     if CONFIG["MOZ_UPDATER"]:
         extra_files.append((
