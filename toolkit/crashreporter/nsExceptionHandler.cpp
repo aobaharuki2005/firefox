@@ -233,6 +233,9 @@ static MOZ_GLIBCXX_CONSTINIT xpstring pendingDirectory;
 static MOZ_GLIBCXX_CONSTINIT xpstring crashReporterPath;
 static MOZ_GLIBCXX_CONSTINIT xpstring crashHelperPath;
 static MOZ_GLIBCXX_CONSTINIT xpstring memoryReportPath;
+#ifdef XP_MACOSX
+static MOZ_GLIBCXX_CONSTINIT xpstring libraryPath;
+#endif
 
 // Where crash events should go.
 static MOZ_GLIBCXX_CONSTINIT xpstring eventsDirectory;
@@ -1217,6 +1220,10 @@ static bool LaunchProgram(const XP_CHAR* aProgramPath,
     CloseHandle(pi.hThread);
   }
 #  elif defined(XP_MACOSX)
+  // Older dyld versions do not resolve the crash reporter's adjacent NSS
+  // dependencies through the modern executable-relative search path.
+  setenv("DYLD_LIBRARY_PATH", libraryPath.c_str(), /* overwrite */ 1);
+
   pid_t pid = 0;
   char* const my_argv[] = {const_cast<char*>(aProgramPath),
                            const_cast<char*>(aMinidumpPath), nullptr};
@@ -1924,7 +1931,23 @@ nsresult SetExceptionHandler(nsIFile* aXREDirectory, bool force /*=false*/) {
     return rv;
   }
 
+#  ifdef XP_MACOSX
+  nsCOMPtr<nsIFile> libPath;
+  rv = aXREDirectory->Clone(getter_AddRefs(libPath));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+  nsAutoString libraryPath_temp;
+  rv = libPath->GetPath(libraryPath_temp);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+#  endif
+
   crashReporterPath = crashReporterPath_temp.get();
+#  ifdef XP_MACOSX
+  libraryPath = NS_ConvertUTF16toUTF8(libraryPath_temp).get();
+#  endif
 #else
   // On Android, we launch a service defined via MOZ_ANDROID_CRASH_HANDLER
   const char* androidCrashHandler = PR_GetEnv("MOZ_ANDROID_CRASH_HANDLER");

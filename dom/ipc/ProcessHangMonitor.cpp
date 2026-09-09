@@ -668,6 +668,7 @@ mozilla::ipc::IPCResult HangMonitorChild::RecvSetMainThreadQoSPriority(
            DefineQoS(aQoSPriority)));
 
 #ifdef XP_MACOSX
+  if(__builtin_available(macOS 10.10, *)) {
   // If the new priority is the background (low) priority, we can tell the OS to
   // put the main thread on low-power cores. Alternately, if we are changing
   // from the background to a higher priority, we change the main thread back to
@@ -700,6 +701,7 @@ mozilla::ipc::IPCResult HangMonitorChild::RecvSetMainThreadQoSPriority(
     pthread_override_qos_class_end_np(qosOverride);
     MOZ_LOG(gQoSLog, LogLevel::Debug,
             ("Override %s removed from main thread.", DefineQoS(aQoSPriority)));
+  }
   }
 #endif
 
@@ -1213,9 +1215,11 @@ ProcessHangMonitor::ProcessHangMonitor() : mCPOWTimeout(false) {
   // On MacOS, ensure the priority is high enough to handle dispatches at
   // high cpu load. USER_INITIATED class threads are prioritized just below
   // the main thread.
+  if(__builtin_available(macOS 10.10, *)) {
   mThread->Dispatch(NS_NewRunnableFunction(
       "ProcessHangMonitor::SetPriority",
       [] { pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0); }));
+  }
 #endif
 }
 

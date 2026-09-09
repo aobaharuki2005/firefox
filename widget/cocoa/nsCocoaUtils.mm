@@ -26,6 +26,7 @@
 #include "nsCRT.h"
 #include "nsChildView.h"
 #include "nsClipboard.h"
+#include "nsCocoaFeatures.h"
 #include "nsCocoaUtils.h"
 #include "nsCocoaWindow.h"
 #include "nsIAppShellService.h"
@@ -443,7 +444,7 @@ nsresult nsCocoaUtils::CreateNSImageFromCGImage(CGImageRef aInputImage,
   [NSGraphicsContext setCurrentContext:context];
 
   // Get the Quartz context and draw.
-  CGContextRef imageContext = [[NSGraphicsContext currentContext] CGContext];
+  CGContextRef imageContext = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
   ::CGContextDrawImage(imageContext, *(CGRect*)&imageRect, aInputImage);
 
   [NSGraphicsContext restoreGraphicsState];
@@ -626,7 +627,7 @@ NSEvent* nsCocoaUtils::MakeNewCocoaEventWithType(NSEventType aEventType,
                         modifierFlags:[aEvent modifierFlags]
                             timestamp:[aEvent timestamp]
                          windowNumber:[aEvent windowNumber]
-                              context:nil
+                              context:[aEvent context]
                            characters:[aEvent characters]
           charactersIgnoringModifiers:[aEvent charactersIgnoringModifiers]
                             isARepeat:[aEvent isARepeat]
@@ -818,9 +819,12 @@ bool nsCocoaUtils::HiDPIEnabled() {
       if ([desc objectForKey:NSDeviceIsScreen] == nil) {
         continue;
       }
+      CGFloat scale = [screen respondsToSelector:@selector(backingScaleFactor)]
+                    ? [screen backingScaleFactor]
+                    : 1.0;
       // Currently, we only care about differentiating "1.0" and "2.0",
       // so we set one of the two low bits to record which.
-      if ([screen backingScaleFactor] > 1.0) {
+      if (scale > 1.0) {
         scaleFactors |= 2;
       } else {
         scaleFactors |= 1;
@@ -1195,15 +1199,53 @@ bool nsCocoaUtils::ShouldZoomOnTitlebarDoubleClick() {
   if ([NSWindow respondsToSelector:@selector(_shouldZoomOnDoubleClick)]) {
     return [NSWindow _shouldZoomOnDoubleClick];
   }
+  if (nsCocoaFeatures::OnElCapitanOrLater()) {
   return [ActionOnDoubleClickSystemPref() isEqualToString:@"Maximize"];
 }
-
+  return false;
+}
 bool nsCocoaUtils::ShouldMinimizeOnTitlebarDoubleClick() {
   // Check the system preferences.
   // We could also check -[NSWindow _shouldMiniaturizeOnDoubleClick]. It's not
   // clear to me which approach would be preferable; neither is public API.
+  if (nsCocoaFeatures::OnElCapitanOrLater()) {
   return [ActionOnDoubleClickSystemPref() isEqualToString:@"Minimize"];
 }
+
+  // Pre-10.11:
+  NSUserDefaults* userDefaults = [NSUserDefaults standardUserDefaults];
+  NSString* kAppleMiniaturizeOnDoubleClickKey = @"AppleMiniaturizeOnDoubleClick";
+  id value1 = [userDefaults objectForKey:kAppleMiniaturizeOnDoubleClickKey];
+  return [value1 isKindOfClass:[NSValue class]] && [value1 boolValue];
+}
+
+// AVAuthorizationStatus is not needed unless we are running on 10.14.
+// However, on pre-10.14 SDK's, AVAuthorizationStatus and its enum values
+// are both defined and prohibited from use by compile-time checks. We
+// define a copy of AVAuthorizationStatus to allow compilation on pre-10.14
+// SDK's. The enum values must match what is defined in the 10.14 SDK.
+// We use ASSERTS for 10.14 SDK builds to check the enum values match.
+enum GeckoAVAuthorizationStatus : NSInteger {
+  GeckoAVAuthorizationStatusNotDetermined = 0,
+  GeckoAVAuthorizationStatusRestricted = 1,
+  GeckoAVAuthorizationStatusDenied = 2,
+  GeckoAVAuthorizationStatusAuthorized = 3
+};
+
+#if !defined(MAC_OS_X_VERSION_10_14) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_14
+// Define authorizationStatusForMediaType: as returning
+// GeckoAVAuthorizationStatus instead of AVAuthorizationStatus to allow
+// compilation on pre-10.14 SDK's.
+@interface AVCaptureDevice (GeckoAVAuthorizationStatus)
++ (GeckoAVAuthorizationStatus)authorizationStatusForMediaType:(AVMediaType)mediaType;
+@end
+
+@interface AVCaptureDevice (WithCompletionHandler)
++ (void)requestAccessForMediaType:(AVMediaType)mediaType
+                completionHandler:(void (^)(BOOL granted))handler;
+@end
+
+#endif
 
 static const char* AVMediaTypeToString(AVMediaType aType) {
   if (aType == AVMediaTypeVideo) {
@@ -1242,7 +1284,7 @@ static void LogAuthorizationStatus(AVMediaType aType, int aState) {
 
 static nsresult GetPermissionState(AVMediaType aMediaType, uint16_t& aState) {
   MOZ_ASSERT(aMediaType == AVMediaTypeVideo || aMediaType == AVMediaTypeAudio);
-
+  if (@available(macOS 10.14, *)) {
   AVAuthorizationStatus authStatus = static_cast<AVAuthorizationStatus>(
       [AVCaptureDevice authorizationStatusForMediaType:aMediaType]);
   LogAuthorizationStatus(aMediaType, authStatus);
@@ -1267,6 +1309,9 @@ static nsresult GetPermissionState(AVMediaType aMediaType, uint16_t& aState) {
   }
 }
 
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
 nsresult nsCocoaUtils::GetVideoCapturePermissionState(
     uint16_t& aPermissionState) {
   return GetPermissionState(AVMediaTypeVideo, aPermissionState);
@@ -1287,6 +1332,7 @@ nsresult nsCocoaUtils::GetScreenCapturePermissionState(
     uint16_t& aPermissionState) {
   aPermissionState = nsIOSPermissionRequest::PERMISSION_STATE_NOTDETERMINED;
 
+  if (@available(macOS 10.15, *)) {
   if (!StaticPrefs::media_macos_screenrecording_oscheck_enabled()) {
     aPermissionState = nsIOSPermissionRequest::PERMISSION_STATE_AUTHORIZED;
     LOG("screen authorization status: authorized (test disabled via pref)");
@@ -1385,6 +1431,10 @@ nsresult nsCocoaUtils::GetScreenCapturePermissionState(
   return NS_OK;
 }
 
+  LOG("GetScreenCapturePermissionState(): nothing to do, not on 10.15+");
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
 nsresult nsCocoaUtils::RequestVideoCapturePermission(
     RefPtr<Promise>& aPromise) {
   MOZ_ASSERT(NS_IsMainThread());
@@ -1415,6 +1465,7 @@ nsresult nsCocoaUtils::RequestCapturePermission(
   MOZ_ASSERT(aType == AVMediaTypeVideo || aType == AVMediaTypeAudio);
   LOG("RequestCapturePermission(%s)", AVMediaTypeToString(aType));
 
+  if (@available(macOS 10.14, *)) {
   sMediaCaptureMutex.Lock();
 
   // Initialize our list of promises on first invocation
@@ -1440,6 +1491,10 @@ nsresult nsCocoaUtils::RequestCapturePermission(
   // Start the request
   [AVCaptureDevice requestAccessForMediaType:aType completionHandler:aHandler];
   return NS_OK;
+}
+
+  return NS_ERROR_NOT_IMPLEMENTED;
+
 }
 
 //

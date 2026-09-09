@@ -8031,6 +8031,13 @@ void profiler_mark_thread_awake() {
     }
   }
 #endif
+#if defined(GP_OS_darwin)
+  size_t qos_self_retval;
+  if(__builtin_available(macOS 10.10, *))
+    qos_self_retval = qos_class_self();
+  else
+    qos_self_retval = QOS_CLASS_UNSPECIFIED;
+#endif
   PROFILER_MARKER("Awake", OTHER, MarkerTiming::IntervalStart(), CPUAwakeMarker,
                   0 /* CPU time */
 #if !defined(GP_PLAT_unknown) && !defined(GP_PLAT_arm64_darwin)
@@ -8039,7 +8046,7 @@ void profiler_mark_thread_awake() {
 #endif
 #if defined(GP_OS_darwin)
                   ,
-                  qos_class_self()
+                  qos_self_retval
 #endif
 #if defined(GP_OS_windows)
                       ,

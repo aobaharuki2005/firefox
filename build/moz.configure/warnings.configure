@@ -320,7 +320,7 @@ check_and_add_warning(
 
 # Warn if APIs are used without available() checks on macOS.
 check_and_add_warning(
-    "-Werror=unguarded-availability-new", when=target_is_osx, min_clang_version="5.0.0"
+    "-Wno-error=unguarded-availability-new", when=target_is_osx, min_clang_version="5.0.0"
 )
 
 # clang 17 warns about builtins being redefined and... well, we do that in

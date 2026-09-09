@@ -50,6 +50,10 @@
 #include "mozmemory.h"
 #include "nsExceptionHandler.h"
 
+#ifdef XP_MACOSX
+#  include "nsCocoaFeatures.h"
+#endif
+
 #ifdef XP_WIN
 #  include "mozilla/gfx/DeviceManagerDx.h"
 #  include "mozilla/widget/WinCompositorWidget.h"
@@ -96,6 +100,16 @@ const char* gfx_wr_resource_path_override() {
 }
 
 bool gfx_wr_use_optimized_shaders() {
+#ifdef XP_MACOSX
+  // The offline-optimized WebRender shaders crash the Intel GLSL compiler
+  // shipped with Lion (INTEL-7.32.12) in glpSerializeAST. The equivalent
+  // unoptimized shader source compiles successfully on the same driver and
+  // still uses hardware WebRender, so bypass only the source optimizer on
+  // pre-Mountain-Lion systems.
+  if (!nsCocoaFeatures::OnMountainLionOrLater()) {
+    return false;
+  }
+#endif
   return mozilla::gfx::gfxVars::UseWebRenderOptimizedShaders();
 }
 

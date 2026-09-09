@@ -211,6 +211,9 @@ unsafe impl Send for ColorSpaces {}
 unsafe impl Sync for ColorSpaces {}
 
 struct ColorSpaces {
+    extended_linear_srgb: &'static CFString,
+    extended_srgb: &'static CFString,
+    display_p3: &'static CFString,
     extended_display_p3: &'static CFString,
     itur_bt2100_pq: &'static CFString,
     itur_bt2100_hlg: &'static CFString,
@@ -232,10 +235,19 @@ static COLOR_SPACES: LazyLock<Result<ColorSpaces, crate::SurfaceError>> = LazyLo
             .map_err(|_| crate::SurfaceError::Other("error resolving symbol in CoreGraphics"))?;
         Ok(*sym)
     }
+    // Added in macOS 10.12; resolve dynamically so the binary still loads on
+    // older targets (10.7+) instead of failing at launch with an undefined
+    // symbol.
+    let extended_linear_srgb = lookup(&lib, c"kCGColorSpaceExtendedLinearSRGB")?;
+    let extended_srgb = lookup(&lib, c"kCGColorSpaceExtendedSRGB")?;
+    let display_p3 = lookup(&lib, c"kCGColorSpaceDisplayP3")?;
     let extended_display_p3 = lookup(&lib, c"kCGColorSpaceExtendedDisplayP3")?;
     let itur_bt2100_pq = lookup(&lib, c"kCGColorSpaceITUR_2100_PQ")?;
     let itur_bt2100_hlg = lookup(&lib, c"kCGColorSpaceITUR_2100_HLG")?;
     Ok(ColorSpaces {
+        extended_linear_srgb,
+        extended_srgb,
+        display_p3,
         extended_display_p3,
         itur_bt2100_pq,
         itur_bt2100_hlg,
@@ -290,10 +302,15 @@ impl crate::Surface for super::Surface {
             // Reset to the layer's default, which treats contents as sRGB.
             wgt::SurfaceColorSpace::Srgb => None,
             wgt::SurfaceColorSpace::ExtendedSrgbLinear => {
-                Some(unsafe { objc2_core_graphics::kCGColorSpaceExtendedLinearSRGB })
+                // `kCGColorSpaceExtendedLinearSRGB` is macOS 10.12+; resolved
+                // dynamically (see `COLOR_SPACES`) to avoid an undefined-symbol
+                // load failure on our 10.7 minimum.
+                Some(COLOR_SPACES.as_ref().map_err(|e| e.clone())?.extended_linear_srgb)
             }
             wgt::SurfaceColorSpace::ExtendedSrgb => {
-                Some(unsafe { objc2_core_graphics::kCGColorSpaceExtendedSRGB })
+                // `kCGColorSpaceExtendedSRGB` is macOS 10.12+; same dynamic
+                // resolution as above.
+                Some(COLOR_SPACES.as_ref().map_err(|e| e.clone())?.extended_srgb)
             }
             wgt::SurfaceColorSpace::ExtendedDisplayP3 => {
                 // Only reported by `surface_capabilities` on macOS 11.0+/iOS 14.0+.
@@ -308,7 +325,7 @@ impl crate::Surface for super::Surface {
                 )
             }
             wgt::SurfaceColorSpace::DisplayP3 => {
-                Some(unsafe { objc2_core_graphics::kCGColorSpaceDisplayP3 })
+                Some(COLOR_SPACES.as_ref().map_err(|e| e.clone())?.display_p3)
             }
             wgt::SurfaceColorSpace::Bt2100Pq | wgt::SurfaceColorSpace::Bt2100Hlg => {
                 // The ITUR_2100 color space constants require macOS 11.0/iOS 14.0;

@@ -213,6 +213,15 @@ with only_when(target_is_osx):
     def macos_target(value, _):
         return value[0]
 
+    @depends(macos_target)
+    def legacy_macos_target(value):
+        version = tuple(int(component) for component in value.split("."))
+        if version < (10, 12):
+            return True
+
+    set_config("MOZ_LEGACY_MACOS", legacy_macos_target)
+    set_define("MOZ_LEGACY_MACOS", legacy_macos_target)
+
 
 @imports("plistlib")
 @imports(_from="__builtin__", _import="open")
@@ -316,6 +325,36 @@ with only_when(host_is_osx | target_is_osx):
         return sdk
 
     set_config("MACOS_SDK_DIR", macos_sdk)
+
+
+with only_when(target_is_osx):
+    with only_when(cross_compiling):
+        option(
+            "--with-macos-private-frameworks",
+            env="MACOS_PRIVATE_FRAMEWORKS_DIR",
+            nargs=1,
+            help="Location of private frameworks to use",
+        )
+
+        @depends_if("--with-macos-private-frameworks")
+        @imports(_from="os.path", _import="isdir")
+        def macos_private_frameworks(value):
+            if value and not isdir(value[0]):
+                die(
+                    "PrivateFrameworks not found not found in %s. When using "
+                    "--with-macos-private-frameworks, you must specify a valid "
+                    "directory",
+                    value[0],
+                )
+            return value[0]
+
+    @depends(macos_private_frameworks, macos_sdk)
+    def macos_private_frameworks(value, sdk):
+        if value:
+            return value
+        return os.path.join(sdk or "/", "System/Library/PrivateFrameworks")
+
+    set_config("MACOS_PRIVATE_FRAMEWORKS_DIR", macos_private_frameworks)
 
 
 with only_when(target_is_ios):
@@ -1909,7 +1948,7 @@ def select_linker_tmpl(host_or_target):
 
         def is_valid_linker(linker):
             if target.kernel == "Darwin":
-                valid_linkers = ("ld64", "lld")
+                valid_linkers = ("ld64", "ld-classic", "lld")
             else:
                 valid_linkers = ("bfd", "gold", "lld", "mold")
             if linker in valid_linkers:
@@ -1930,6 +1969,21 @@ def select_linker_tmpl(host_or_target):
             # Generate the compiler flag
             if linker == "ld64":
                 linker_flag = ["-fuse-ld=ld"]
+            elif linker == "ld-classic":
+                linker_path = os.environ.get("DARWIN_LD_CLASSIC")
+                if not linker_path:
+                    linker_path = shutil.which("ld-classic")
+                if not linker_path:
+                    xcrun = shutil.which("xcrun")
+                    if xcrun:
+                        retcode, stdout, _ = get_cmd_output(
+                            xcrun, "--find", "ld-classic"
+                        )
+                        if retcode == 0:
+                            linker_path = stdout.strip()
+                if not linker_path:
+                    return None
+                linker_flag = ["-fuse-ld=" + linker_path]
             elif linker:
                 linker_flag = ["-fuse-ld=" + linker]
             else:
@@ -1948,7 +2002,7 @@ def select_linker_tmpl(host_or_target):
             # ensure consistent output.
             env["LC_ALL"] = "C"
             retcode, stdout, stderr = get_cmd_output(*cmd, env=env)
-            if retcode == 1 and "Logging ld64 options" in stderr:
+            if retcode == 1 and "unknown options" in stderr:
                 kind = "ld64"
 
             elif retcode != 0:
@@ -2014,7 +2068,10 @@ def select_linker_tmpl(host_or_target):
             die("--enable-stdcxx-compat is not compatible with the gold linker")
 
         # If an explicit linker was given, error out if what we found is different.
-        if linker and not linker.startswith(result.KIND):
+        if linker and not (
+            linker.startswith(result.KIND)
+            or (linker == "ld-classic" and result.KIND == "ld64")
+        ):
             die("Could not use {} as linker".format(linker))
 
         return result
