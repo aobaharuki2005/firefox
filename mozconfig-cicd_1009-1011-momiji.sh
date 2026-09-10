@@ -46,23 +46,27 @@ export RUSTFLAGS="-C target-cpu=core2"
 export LDFLAGS="-headerpad_max_install_names"
 
 # ========== OPTIMIZATIONS ==========   
-ac_add_options --disable-crashreporter
+# ac_add_options --disable-crashreporter
 ac_add_options --disable-tests
 ac_add_options --disable-dmd
 ac_add_options --disable-geckodriver
-ac_add_options --disable-profiling
+# ac_add_options --disable-profiling
 ac_add_options --disable-updater
 
 # ===== CUSTOMIZATION ==== #
 export MOZ_REQUIRE_SIGNING=     # Disable extension signing check
 
 # ========= Production-specific optimizations (reference from Waterfox) ===========     
-ac_add_options --disable-debug
-ac_add_options --enable-optimize="-Os -w"
-export RUSTC_OPT_LEVEL="s"
+# ac_add_options --disable-debug
+# ac_add_options --enable-optimize="-Os -w"
+# export RUSTC_OPT_LEVEL="s"
 
 
 # ========= Testing-specific optimizations (reference from Waterfox) ===========
 # ac_add_options --disable-optimize
 # export CFLAGS="$CFLAGS -w"
 # export CXXFLAGS="$CXXFLAGS -w"
+ac_add_options --disable-debug
+ac_add_options --enable-optimize="-Og -w"      # thay -Os bằng -Og
+ac_add_options --enable-debug-symbols          # symbols đầy đủ, không bị optimize làm mờ
+export RUSTC_OPT_LEVEL="1"                     # thay "s" — giữ debug info Rust tốt hơn
