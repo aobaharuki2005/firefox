@@ -50,7 +50,7 @@ export LDFLAGS="-headerpad_max_install_names"
 ac_add_options --disable-tests
 ac_add_options --disable-dmd
 ac_add_options --disable-geckodriver
-ac_add_options --disable-profiling
+# ac_add_options --disable-profiling
 ac_add_options --disable-updater
 
 # ===== CUSTOMIZATION ==== #

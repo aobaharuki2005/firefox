@@ -203,55 +203,7 @@ static NSData *SendSynchronousNSURLRequest(NSURLRequest *req,
 
 //=============================================================================
 - (NSData *)send:(NSError **)error {
-  NSMutableURLRequest *req =
-    [[NSMutableURLRequest alloc]
-          initWithURL:url_ cachePolicy:NSURLRequestUseProtocolCachePolicy
-      timeoutInterval:60.0];
-
-  NSMutableData *postBody = [NSMutableData data];
-
-  [req setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@",
-    boundary_] forHTTPHeaderField:@"Content-type"];
-
-  // Add JSON parameters to the message
-  [postBody appendData:[self formDataForJSON:parameters_]];
-
-  // Add any files to the message
-  NSArray *fileNames = [files_ allKeys];
-  for (NSString *name in fileNames) {
-    id fileOrData = [files_ objectForKey:name];
-    NSData *fileData;
-
-    // The object can be either the path to a file (NSString) or the contents
-    // of the file (NSData).
-    if ([fileOrData isKindOfClass:[NSData class]])
-      fileData = [self formDataForFileContents:fileOrData name:name];
-    else
-      fileData = [self formDataForFile:fileOrData name:name];
-
-    [postBody appendData:fileData];
-  }
-
-  NSString *epilogue = [NSString stringWithFormat:@"\r\n--%@--\r\n", boundary_];
-  [postBody appendData:[epilogue dataUsingEncoding:NSUTF8StringEncoding]];
-
-  [req setHTTPBody:postBody];
-  [req setHTTPMethod:@"POST"];
-
-  [response_ release];
-  response_ = nil;
-
-  NSData *data = nil;
-  if ([[req URL] isFileURL]) {
-    [[req HTTPBody] writeToURL:[req URL] options:0 error:error];
-  } else {
-    NSURLResponse *response = nil;
-    data = SendSynchronousNSURLRequest(req, &response, error);
-    response_ = (NSHTTPURLResponse *)[response retain];
-  }
-  [req release];
-
-  return data;
+  return nil;
 }
 
 //=============================================================================
