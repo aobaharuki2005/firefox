@@ -39,7 +39,6 @@ default = [
     "log",
 ]
 direct-log = ["dep:log"]
-fast-apple-datapath = []
 log = ["tracing/log"]
 
 [lib]

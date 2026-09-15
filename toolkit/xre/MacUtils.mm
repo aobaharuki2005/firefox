@@ -17,11 +17,16 @@ void LaunchTask(NSString* aPath, NSArray* aArguments) {
 
   @try {
     NSTask* task = [[NSTask alloc] init];
-    [task setExecutableURL:[NSURL fileURLWithPath:aPath]];
     if (aArguments) {
       [task setArguments:aArguments];
     }
-    [task launchAndReturnError:nil];
+    if(@available(macOS 10.13, *)) {
+      [task setExecutableURL:[NSURL fileURLWithPath:aPath]];
+      [task launchAndReturnError:nil];
+    } else {
+      [task setLaunchPath:aPath];
+      [task launch];
+    }
     [task waitUntilExit];
     [task release];
   } @catch (NSException* e) {

@@ -20,6 +20,11 @@ SOURCES += [
     'string_utilities.cc',
 ]
 
+if CONFIG["OS_ARCH"] == "Darwin":
+    OS_LIBS += [
+        "-framework Foundation",
+    ]
+
 Library('breakpad_mac_common_s')
 
 include('/toolkit/crashreporter/crashreporter.mozbuild')
