@@ -1,0 +1,173 @@
+name: build official Momiji
+
+on: 
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    name: build official Momiji
+    runs-on: macos-15     # arm64 runner
+    if: ${{ !contains(github.event.head_commit.message, 'DONTBUILD') && !contains(github.event.head_commit.message, 'IGNORE10071008') && contains(github.event.head_commit.message, 'BUILDMOMIJI') }}
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (18/07/2026)
+        with:
+          fetch-depth: 1
+      
+      - name: Restore buildcache
+        id: restore-buildcache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (27/6/2026)
+        with:
+          path: ~/.buildcache
+          key: ${{ runner.os }}-buildcache-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-buildcache-
+      
+      - name: Restore cached mozbuild toolchains
+        id: restore-mozbuildcache
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+        with:
+          path: ~/.mozbuild
+          key: ${{ runner.os }}-mozbuild-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-mozbuild-
+      
+      - name: Bootstrap build deps
+        id: bootstrap-build-deps
+        run: |
+          if [ ! -d "$HOME/.mozbuild" ]; then
+            echo "Cached .mozbuild toolchain not found. Starting bootstrap..."
+            /usr/bin/python3 ./mach bootstrap --application-choice=browser
+        
+            # Create temp folder to save necessary toolchains
+            mkdir -p ~/tmp_toolchains
+            
+            # Move necessary toolchains outside
+            [ -d "$HOME/.mozbuild/node" ] && mv "$HOME/.mozbuild/node" ~/tmp_toolchains/
+            [ -d "$HOME/.mozbuild/sccache" ] && mv "$HOME/.mozbuild/sccache" ~/tmp_toolchains/
+            [ -d "$HOME/.mozbuild/cbindgen" ] && mv "$HOME/.mozbuild/cbindgen" ~/tmp_toolchains/
+            [ -d "$HOME/.mozbuild/clang" ] && mv "$HOME/.mozbuild/clang" ~/tmp_toolchains/
+            [ -d "$HOME/.mozbuild/sysroot-wasm32-wasi" ] && mv "$HOME/.mozbuild/sysroot-wasm32-wasi" ~/tmp_toolchains/
+            
+            # Purge old .mozbuild
+            rm -rf "$HOME/.mozbuild"
+        
+            # Rename to (new) .mozbuild
+            mv ~/tmp_toolchains "$HOME/.mozbuild"
+
+            # Bootstrap buildcache
+            cd $HOME/.mozbuild
+            curl -LO https://gitlab.com/bits-n-bites/buildcache/-/releases/v0.33.0/downloads/buildcache-macos.zip
+            unzip -q buildcache-macos.zip
+            
+            echo "Bootstrap finished. Kept: nodejs, sccache, cbindgen, clang, sysroot-wasm32-wasi, buildcache"
+          fi
+
+          # Install nasm from Homebrew
+          brew install nasm
+
+      - name: Saving mozbuild toolchain cache
+        id: save-mozbuild-cache
+        if: steps.restore-mozbuild-cache.outputs.cache-matched-key == ''
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+        with:
+          key: ${{ runner.os }}-mozbuild-${{ github.run_id }}
+          path: ~/.mozbuild
+
+      - name: Bootstrap Rust toolchain
+        id: bootstrap-rust
+        run: |
+          export RUST_VERSION=1.82.0
+          if [ ! -d "$HOME/.rustup/toolchains/${RUST_VERSION}-custom-aarch64" ]; then
+            echo "Cached Rust ${RUST_VERSION}-custom-aarch64 not found. Starting bootstrap..."
+            curl -LO https://github.com/aobaharuki2005/rust/releases/download/${RUST_VERSION}-custom/${RUST_VERSION}-custom-aarch64.zip
+            mkdir -p ~/.rustup/toolchains
+            unzip -q ${RUST_VERSION}-custom-aarch64.zip -d ~/.rustup/toolchains
+            echo "Bootstrap Rust ${RUST_VERSION}-custom-aarch64 finished."
+          fi
+        
+          # Change default Rust toolchain
+          rustup default ${RUST_VERSION}-custom-aarch64
+          rustup override set ${RUST_VERSION}-custom-aarch64
+
+          # Verify Rust installation
+          cargo --version
+          rustc --version
+
+      - name: Build and package
+        run: | 
+          export MOZCONFIG=$PWD/.github/workflows/build-momiji.conf.sh
+          /usr/bin/python3 ./mach build
+          /usr/bin/python3 ./mach package
+
+      - name: Saving buildcache
+        id: save-buildcache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (27/6/2026)
+        with:
+          path: ~/.buildcache
+          key: ${{ runner.os }}-buildcache-${{ github.run_id }}
+
+      - name: Polyfill and Repackage
+        run: |
+          export VERSION=$(cat browser/config/version.txt)
+          hdiutil attach -noverify obj-ff-dbg/dist/momiji-$VERSION.en-US.mac.dmg
+          cp -R /Volumes/Momiji/Momiji.app /tmp
+          
+          # Build libMacportsLegacySystem.B.dylib (patched to support CCRandomGenerateBytes and exp10)
+          git clone --recursive --branch 1.5.2_addCCRandom https://github.com/aobaharuki2005/macports-legacy-support.git
+          pushd ./macports-legacy-support
+
+          CC="clang --target=x86_64-apple-macos10.6" \
+          CXX="clang++ --target=x86_64-apple-macos10.6" \
+          CFLAGS="-Os" \
+          CXXFLAGS="-Os" \
+          LDFLAGS="--target=x86_64-apple-macos10.6" \
+          make
+
+          cp lib/libMacportsLegacySystem.B.dylib /tmp/Momiji.app/Contents/MacOS
+          pushd /tmp
+
+          zip -qr "Momiji-${VERSION}_macOS10.12-10.14.zip" Momiji.app
+          pushd ./Momiji.app/Contents/MacOS
+
+          install_name_tool -change "/usr/lib/libSystem.B.dylib" "@executable_path/libMacportsLegacySystem.B.dylib" "XUL"
+          install_name_tool -change "/usr/lib/libSystem.B.dylib" "@executable_path/libMacportsLegacySystem.B.dylib" "libmozavutil.dylib"
+          install_name_tool -change "/usr/lib/libSystem.B.dylib" "@executable_path/libMacportsLegacySystem.B.dylib" "libgkcodecs.dylib"
+          install_name_tool -change "/System/Library/Frameworks/CoreText.framework/Versions/A/CoreText" "/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreText.framework/Versions/A/CoreText" "XUL"
+          popd
+
+          zip -qr "Momiji-${VERSION}_macOS10.07-10.11.zip" Momiji.app
+
+      - name: Upload Momiji for macOS 10.7-10.11
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1 (11/4/2026)
+        with:
+          archive: false
+          path: /tmp/*10.07-10.11.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Momiji for macOS 10.12-10.14
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1 (11/4/2026)
+        with:
+          archive: false
+          path: /tmp/*10.12-10.14.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload original Momiji DMG (in case automatic repackaging fails)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1 (11/4/2026)
+        with:
+          archive: false
+          path: obj-ff-dbg/dist/momiji-*.mac.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+
+
+
+
+
+
