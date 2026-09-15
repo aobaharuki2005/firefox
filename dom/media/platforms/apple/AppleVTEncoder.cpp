@@ -40,7 +40,7 @@ extern LazyLogModule sPEMLog;
 static CFDictionaryRef BuildEncoderSpec(const bool aHardwareNotAllowed,
                                         const bool aLowLatencyRateControl) {
   if (__builtin_available(macos 11.3, *)) {
-    if (aLowLatencyRateControl) {
+    if (aLowLatencyRateControl && AppleVTLinker::skPropEnableHWAccel_Encode && AppleVTLinker::skPropUsingLowLat_Encode) {
       // If doing low-latency rate control, the hardware encoder is required.
       const void* keys[] = {
           AppleVTLinker::skPropEnableHWAccel_Encode,
@@ -498,7 +498,17 @@ MediaResult AppleVTEncoder::InitSession() {
        mHardwareNotAllowed ? "no" : "yes");
   AutoCFTypeRef<CFDictionaryRef> spec(
       BuildEncoderSpec(mHardwareNotAllowed, lowLatencyRateControl));
-
+  // In case spec == nullptr (building encoder specification failed), 
+  // stop attempting to init an AppleVTEncoder session, which prevent
+  // calls to VTCompressionSessionCreate that leads to CFHash() being called with NULL.
+  // Note that this is only enough to prevent Whatsapp from crashing, 
+  // yet to restore its video call function.
+  // Further research for restoring video call function is required 
+  // and need to be resolved in an independent issue thread.
+  if (!spec) {
+    return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
+                      "failed to build VideoToolbox encoder spec");
+  }
   // Bug 1955153: Set sourceImageBufferAttributes using the pixel format derived
   // from mConfig.mFormat.
   OSStatus status = VTCompressionSessionCreate(
