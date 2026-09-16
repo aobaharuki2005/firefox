@@ -23,5 +23,5 @@
 # This brand name can be used in messages where the product name needs to
 # remain unchanged across different versions (Momiji, Beta, etc.).
 -brand-product-name = Momiji
--vendor-short-name = aobaharuki2005
+-vendor-short-name = Mozilla
 trademarkInfo = { " " }
