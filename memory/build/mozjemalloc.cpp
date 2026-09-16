@@ -532,8 +532,8 @@ class ArenaCollection {
     return aArenaId & MAIN_THREAD_ARENA_BIT;
   }
 
-  arena_t* mDefaultArena = nullptr;
-  arena_id_t mLastPublicArenaId MOZ_GUARDED_BY(mLock) = 0;
+  arena_t* mDefaultArena;
+  arena_id_t mLastPublicArenaId MOZ_GUARDED_BY(mLock);
 
   // Accessing mArenas and mPrivateArenas can only be done while holding mLock.
   Tree mArenas MOZ_GUARDED_BY(mLock);
@@ -567,7 +567,7 @@ class ArenaCollection {
   bool mIsDeferredPurgeEnabled MOZ_GUARDED_BY(mLock) = false;
 };
 
-constinit static ArenaCollection gArenas;
+MOZ_RUNINIT static ArenaCollection gArenas;
 
 // Protects huge allocation-related data structures.
 static Mutex huge_mtx;

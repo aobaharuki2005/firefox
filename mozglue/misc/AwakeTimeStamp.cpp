@@ -73,7 +73,6 @@ void AwakeTimeStamp::operator-=(const AwakeTimeDuration& aOther) {
 AwakeTimeStamp AwakeTimeStamp::Now() {
   return AwakeTimeStamp(clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / kNSperUS);
 }
-
 AwakeTimeStamp AwakeTimeStamp::NowLoRes() { return Now(); }
 
 #elif defined(XP_WIN)
@@ -89,13 +88,6 @@ AwakeTimeStamp AwakeTimeStamp::NowLoRes() {
   return AwakeTimeStamp(interrupt_time / kHNSperUS);
 }
 
-AwakeTimeStamp AwakeTimeStamp::Now() {
-  ULONGLONG interrupt_time;
-  QueryUnbiasedInterruptTimePrecise(&interrupt_time);
-
-  return AwakeTimeStamp(interrupt_time / kHNSperUS);
-}
-
 #else  // Linux and other POSIX but not macOS
 #  include <time.h>
 
@@ -103,14 +95,12 @@ uint64_t TimespecToMicroseconds(struct timespec aTs) {
   return aTs.tv_sec * kUSperS + aTs.tv_nsec / kNSperUS;
 }
 
-AwakeTimeStamp AwakeTimeStamp::Now() {
+AwakeTimeStamp AwakeTimeStamp::NowLoRes() {
   struct timespec ts = {0};
   DebugOnly<int> rv = clock_gettime(CLOCK_MONOTONIC, &ts);
   MOZ_ASSERT(!rv);
   return AwakeTimeStamp(TimespecToMicroseconds(ts));
 }
-
-AwakeTimeStamp AwakeTimeStamp::NowLoRes() { return Now(); }
 
 #endif
 

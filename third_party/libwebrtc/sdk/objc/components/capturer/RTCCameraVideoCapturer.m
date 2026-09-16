@@ -61,14 +61,14 @@ const int64_t kNanosecondsPerSecond = 1000000000;
 }
 
 - (instancetype)initWithDelegate:
-    (__weak id<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>)delegate {
+    (id<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>)delegate {
   return [self initWithDelegate:delegate
                  captureSession:[[AVCaptureSession alloc] init]];
 }
 
 // This initializer is used for testing.
 - (instancetype)initWithDelegate:
-                    (__weak id<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>)delegate
+                    (id<RTC_OBJC_TYPE(RTCVideoCapturerDelegate)>)delegate
                   captureSession:(AVCaptureSession *)captureSession {
   self = [super initWithDelegate:delegate];
   if (self) {
@@ -143,6 +143,10 @@ const int64_t kNanosecondsPerSecond = 1000000000;
   }
 #endif
   return types;
+}
+
++ (NSArray<AVCaptureDevice *> *)legacyCaptureDevices {
+  return [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
 }
 
 + (NSArray<AVCaptureDeviceFormat *> *)supportedFormatsForDevice:

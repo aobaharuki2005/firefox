@@ -52,6 +52,23 @@ def get_hg_info(workdir):
     return repo, changeset
 
 
+def get_git_info(workdir):
+    repo = get_program_output("git", "-C", workdir, "remote", "get-url", "origin")
+    if repo:
+        repo = repo.strip()
+        if repo.startswith("git@"):
+            host, path = repo[4:].split(":", 1)
+            repo = f"https://{host}/{path}"
+        elif repo.startswith("ssh://git@"):
+            repo = "https://" + repo[10:]
+        if repo.endswith(".git"):
+            repo = repo[:-4]
+
+    changeset = get_program_output("git", "-C", workdir, "rev-parse", "HEAD").strip()
+
+    return repo, changeset
+
+
 def get_hg_changeset(path):
     return get_program_output("hg", "-R", path, "parent", "--template={node}")
 
@@ -94,6 +111,8 @@ def source_repo_header(output):
         sourcestamp_path = os.path.join(buildconfig.topsrcdir, SOURCESTAMP_FILENAME)
         if os.path.exists(os.path.join(buildconfig.topsrcdir, ".hg")):
             repo, changeset = get_hg_info(buildconfig.topsrcdir)
+        elif os.path.exists(os.path.join(buildconfig.topsrcdir, ".git")):
+            repo, changeset = get_git_info(buildconfig.topsrcdir)
         elif os.path.exists(sourcestamp_path):
             repo, changeset = get_info_from_sourcestamp(sourcestamp_path)
     elif not changeset:

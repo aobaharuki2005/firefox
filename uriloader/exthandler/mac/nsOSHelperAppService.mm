@@ -37,10 +37,18 @@ nsresult GetDefaultBundleURL(const nsACString& aScheme, CFURLRef* aBundleURL) {
       CFURLRef lookupCFURL =
           ::CFURLCreateWithString(nullptr, lookupCFString, nullptr);
       if (lookupCFURL) {
-        *aBundleURL = ::LSCopyDefaultApplicationURLForURL(lookupCFURL,
-                                                          kLSRolesAll, nullptr);
-        if (*aBundleURL) {
-          rv = NS_OK;
+        if (@available(macOS 10.10, *)) {
+          *aBundleURL = ::LSCopyDefaultApplicationURLForURL(
+              lookupCFURL, kLSRolesAll, nullptr);
+          if (*aBundleURL) {
+            rv = NS_OK;
+          }
+        } else {
+          OSStatus error = ::LSGetApplicationForURL(
+              lookupCFURL, kLSRolesAll, nullptr, aBundleURL);
+          if (error == noErr && *aBundleURL) {
+            rv = NS_OK;
+          }
         }
         ::CFRelease(lookupCFURL);
       }

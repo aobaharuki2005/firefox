@@ -5,16 +5,22 @@
 #include "chrome/common/mach_ipc_mac.h"
 
 #include "base/logging.h"
-#include "base/message_loop.h"
+#if !defined(MOZ_LEGACY_MACOS)
+#  include "base/message_loop.h"
+#endif
 #include "base/string_util.h"
 #include "mozilla/GeckoArgs.h"
-#include "mozilla/ipc/IOThread.h"
+#if !defined(MOZ_LEGACY_MACOS)
+#  include "mozilla/ipc/IOThread.h"
+#endif
 #include "mozilla/Result.h"
 #include "mozilla/ResultVariant.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/UniquePtrExtensions.h"
 #include "nsDebug.h"
-#include "nsXULAppAPI.h"
+#if !defined(MOZ_LEGACY_MACOS)
+#  include "nsXULAppAPI.h"
+#endif
 
 #ifdef XP_MACOSX
 #  include <bsm/libbsm.h>
@@ -189,10 +195,15 @@ bool MachChildProcessCheckIn(
 }
 
 //==============================================================================
+#if defined(MOZ_LEGACY_MACOS)
+mozilla::Result<mozilla::Ok, mozilla::ipc::LaunchError>
+MachHandleProcessCheckIn(
+#else
 namespace {
 
 mozilla::Result<mozilla::Ok, mozilla::ipc::LaunchError>
 MachHandleProcessCheckInSync(
+#endif
     mach_port_t endpoint, pid_t child_pid, mach_msg_timeout_t timeout,
     const std::vector<mozilla::UniqueMachSendRight>& send_rights,
     std::vector<mozilla::UniqueMachReceiveRight>& receive_rights,
@@ -243,7 +254,13 @@ MachHandleProcessCheckInSync(
   }
 
   // Ensure the message was sent by the newly spawned child process.
-  if (audit_token_to_pid(request.trailer.msgh_audit) != child_pid) {
+#if defined(MOZ_LEGACY_MACOS)
+  // audit_token_to_pid was not exported by the OpenBSM shipped with Lion.
+  const pid_t audit_pid = request.trailer.msgh_audit.val[5];
+#else
+  const pid_t audit_pid = audit_token_to_pid(request.trailer.msgh_audit);
+#endif
+  if (audit_pid != child_pid) {
     CHROMIUM_LOG(ERROR) << "task_t was not sent by child process";
     return Err(LaunchError("audit_token_to_pid"));
   }
@@ -316,6 +333,7 @@ MachHandleProcessCheckInSync(
   return Ok();
 }
 
+#if !defined(MOZ_LEGACY_MACOS)
 class MachCheckInListener : public MessageLoopForIO::MachPortWatcher {
  public:
   MachCheckInListener(
@@ -423,5 +441,5 @@ RefPtr<MachHandleProcessCheckInPromise> MachHandleProcessCheckIn(
       ->Start(timeout);
   return promise;
 }
-
+#endif
 #endif

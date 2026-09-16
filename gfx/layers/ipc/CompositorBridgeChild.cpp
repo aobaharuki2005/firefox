@@ -73,6 +73,7 @@ CompositorBridgeChild::CompositorBridgeChild(CompositorManagerChild* aManager)
       mIdNamespace(0),
       mResourceId(0),
       mCanSend(false),
+      mWindowOverlayChanged(false),
       mActorDestroyed(false),
       mPaused(false),
       mForceSyncFlushRendering(false),
@@ -525,6 +526,7 @@ already_AddRefed<CanvasChild> CompositorBridgeChild::GetCanvasChild() {
 
 void CompositorBridgeChild::EndCanvasTransaction() {
   if (auto* cm = gfx::CanvasManagerChild::Get()) {
+    mWindowOverlayChanged = false;
     cm->EndCanvasTransaction();
   }
 }

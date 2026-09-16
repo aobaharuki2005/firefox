@@ -13,6 +13,10 @@
 #include "mozilla/layers/MacIOSurfaceTextureClientOGL.h"
 #include "mozilla/layers/TextureForwarder.h"
 
+#ifdef XP_MACOSX
+#  include "nsCocoaFeatures.h"
+#endif
+
 using namespace mozilla::layers;
 using namespace mozilla::gfx;
 
@@ -271,9 +275,20 @@ already_AddRefed<MacIOSurface> MacIOSurfaceRecycleAllocator::Allocate(
   // possibly gaining some small memory or performance benefit relative to the
   // tri-planar formats. Single planar interleaved formats cannot be used with
   // ANGLE, so we avoid them.
-  RefPtr<MacIOSurface> result = MacIOSurface::CreateBiPlanarSurface(
-      aYSize, aCbCrSize, aChromaSubsampling, aYUVColorSpace, aTransferFunction,
-      aColorRange, aColorDepth, MacIOSurface::AllowAlpha::Yes);
+  // Lion has no 10-bit IOSurface colour and no later 4:2:2 bi-planar formats,
+  // so 10.7 always gets a single-planar 4:2:2 surface (SetData upsamples
+  // 4:2:0 into YUY2).
+  RefPtr<MacIOSurface> result;
+  if (!nsCocoaFeatures::OnMountainLionOrLater()) {
+    result = MacIOSurface::CreateSinglePlanarSurface(
+        aYSize, aYUVColorSpace, aTransferFunction, aColorRange,
+        MacIOSurface::AllowAlpha::Yes);
+  } else {
+    result = MacIOSurface::CreateBiPlanarSurface(
+        aYSize, aCbCrSize, aChromaSubsampling, aYUVColorSpace,
+        aTransferFunction, aColorRange, aColorDepth,
+        MacIOSurface::AllowAlpha::Yes);
+  }
 
   if (result &&
       mSurfaces.Length() < StaticPrefs::layers_iosurfaceimage_recycle_limit()) {

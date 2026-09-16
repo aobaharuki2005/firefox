@@ -1856,6 +1856,11 @@ pub enum Appearance {
     /// Menu Popup background.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menupopup,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Menuseparator,
+    /// The meter bar's meter indicator.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Meterchunk,
     /// The "arrowed" part of the dropdown button that open up a dropdown list.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozMenulistArrowButton,
@@ -1865,9 +1870,14 @@ pub enum Appearance {
     /// For HTML's <input type=password>
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     PasswordInput,
+    /// The progress bar's progress indicator
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Progresschunk,
     /// nsRangeFrame and its subparts
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Range,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    RangeThumb,
     /// The scrollbar slider
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     ScrollbarHorizontal,
@@ -1892,12 +1902,21 @@ pub enum Appearance {
     /// The scroll corner
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Scrollcorner,
+    /// A separator.  Can be horizontal or vertical.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Separator,
+    /// A spin control (up/down control for time/date pickers).
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Spinner,
     /// The up button of a spin control.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     SpinnerUpbutton,
     /// The down button of a spin control.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     SpinnerDownbutton,
+    /// A status bar in a main application window.
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    Statusbar,
     /// A single toolbar button (with no associated dropdown).
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Toolbarbutton,
@@ -1919,6 +1938,8 @@ pub enum Appearance {
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozMacWindow,
 
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacFullscreenButton,
     /// Windows themed window frame elements.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozWindowButtonBox,
@@ -1936,11 +1957,24 @@ pub enum Appearance {
     MozWindowTitlebarMaximized,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozWindowDecorations,
-
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacActiveSourceListSelection,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozMacDisclosureButtonClosed,
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozMacDisclosureButtonOpen,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacSourceList,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacSourceListSelection,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacVibrancyDark,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacVibrancyLight,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacVibrantTitlebarDark,
+    #[parse(condition = "ParserContext::chrome_rules_enabled")]
+    MozMacVibrantTitlebarLight,
 
     /// A themed focus outline (for outline:auto).
     ///

@@ -115,6 +115,40 @@ nsTArray<PrinterInfo> nsPrinterListCUPS::Printers() const {
   };
 
   nsTArray<PrinterInfo> printerInfoList;
+#ifdef XP_MACOSX
+  if (!__builtin_available(macOS 10.9, *)) {
+    cups_dest_t* printers = nullptr;
+    const auto numPrinters = CupsShim().cupsGetDests(&printers);
+    printerInfoList.SetCapacity(numPrinters);
+
+    for (auto i : mozilla::IntegerRange(0, numPrinters)) {
+      cups_dest_t* dest = printers + i;
+      if (const char* printerType = CupsShim().cupsGetOption(
+              "printer-type", dest->num_options, dest->options)) {
+        nsresult rv;
+        int64_t type = nsAutoCString(printerType).ToInteger64(&rv);
+        if (NS_SUCCEEDED(rv) &&
+            (type & (CUPS_PRINTER_FAX | CUPS_PRINTER_SCANNER |
+                     CUPS_PRINTER_DISCOVERED))) {
+          continue;
+        }
+      }
+
+      cups_dest_t* ownedDest = nullptr;
+      mozilla::DebugOnly<const int> numCopied =
+          CupsShim().cupsCopyDest(dest, 0, &ownedDest);
+      MOZ_ASSERT(numCopied == 1);
+
+      nsString name;
+      GetDisplayNameForPrinter(*dest, name);
+      printerInfoList.AppendElement(
+          PrinterInfo{std::move(name), ownedDest, false});
+    }
+    CupsShim().cupsFreeDests(numPrinters, printers);
+    return printerInfoList;
+  }
+#endif
+
   // cupsGetDests2 returns list of found printers without duplicates, unlike
   // cupsEnumDests
   cups_dest_t* printers = nullptr;
@@ -150,7 +184,6 @@ nsTArray<PrinterInfo> nsPrinterListCUPS::Printers() const {
           &CupsDestCallback, &printerInfoList)) {
     return printerInfoList;
   }
-
   // Another error occurred. Maybe printerInfoList could be partially
   // populated, so perhaps we could return it without clearing it in the hope
   // that there are some usable dests. However, presuambly CUPS doesn't

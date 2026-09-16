@@ -190,7 +190,13 @@ void OnUncaughtException(NSException* aException) {
   [super sendEvent:anEvent];
 }
 
+#if defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_12 && \
+    __LP64__
+// 10.12 changed `mask` to NSEventMask (unsigned long long) for x86_64 builds.
 - (NSEvent*)nextEventMatchingMask:(NSEventMask)mask
+#else
+- (NSEvent*)nextEventMatchingMask:(NSUInteger)mask
+#endif
                         untilDate:(NSDate*)expiration
                            inMode:(NSString*)mode
                           dequeue:(BOOL)flag {
@@ -397,9 +403,38 @@ nsresult nsAppShell::Init() {
     //    MacApplicationDelegate.mm's EnsureUseCocoaDockAPI().
     // 2) an embedding app that uses NSApplicationMain() is running -- NSApp's
     //    already been initialized and its main run loop is already running.
+    GeckoNSApplication* app = [GeckoNSApplication sharedApplication];
+
+    if (@available(macOS 10.8, *)) {
     [[NSBundle mainBundle] loadNibNamed:@"res/MainMenu"
-                                  owner:[GeckoNSApplication sharedApplication]
+                                    owner:app
                         topLevelObjects:nil];
+    } else {
+      // NSBundle's instance loading API is unavailable before 10.8. Only the
+      // parent process needs the menu nib. Child processes still need an
+      // NSApplication and run loop, but their XPCOM directory service may not
+      // be registered yet, so looking up NS_GRE_DIR here would abort GPU and
+      // utility process startup.
+      if (XRE_IsParentProcess()) {
+        nsCOMPtr<nsIFile> nibFile;
+        nsresult rv =
+            NS_GetSpecialDirectory(NS_GRE_DIR, getter_AddRefs(nibFile));
+        NS_ENSURE_SUCCESS(rv, rv);
+
+        nibFile->AppendNative("res"_ns);
+        nibFile->AppendNative("MainMenu.nib"_ns);
+
+        nsAutoCString nibPath;
+        rv = nibFile->GetNativePath(nibPath);
+        NS_ENSURE_SUCCESS(rv, rv);
+
+        NSDictionary* nameTable =
+            [NSDictionary dictionaryWithObject:app forKey:NSNibOwner];
+        [NSBundle loadNibFile:[NSString stringWithUTF8String:nibPath.get()]
+            externalNameTable:nameTable
+                     withZone:nil];
+      }
+    }
   }
 
   mDelegate = [[AppShellDelegate alloc] initWithAppShell:this];
@@ -447,8 +482,10 @@ nsresult nsAppShell::Init() {
     } else {
       screenManager.SetHelper(mozilla::MakeUnique<ScreenHelperCocoa>());
     }
-
+    if(__builtin_available(macOS 10.9, *)) {
+      //does not exist in 10.8 or lower. guarded accordingly.
     InitMemoryPressureObserver();
+  }
   }
 
   nsresult rv = nsBaseAppShell::Init();
@@ -464,7 +501,8 @@ nsresult nsAppShell::Init() {
   }
 
 #if !defined(RELEASE_OR_BETA) || defined(DEBUG)
-  if (Preferences::GetBool("security.sandbox.mac.track.violations", false)) {
+  if (nsCocoaFeatures::OnMavericksOrLater() &&
+      Preferences::GetBool("security.sandbox.mac.track.violations", false)) {
     nsSandboxViolationSink::Start();
   }
 #endif
@@ -903,7 +941,9 @@ nsAppShell::Exit(void) {
   mTerminated = true;
 
 #if !defined(RELEASE_OR_BETA) || defined(DEBUG)
+  if (nsCocoaFeatures::OnMavericksOrLater()) {
   nsSandboxViolationSink::Stop();
+  }
 #endif
 
   // Quoting from Apple's doc on the [NSApplication stop:] method (from their

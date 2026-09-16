@@ -71,7 +71,7 @@ Maybe<uint64_t> NowIncludingSuspendMs() {
 // Number of nanoseconds in a millisecond.
 static constexpr uint64_t kNSperMS = 1000000;
 
-static uint64_t TimespecToMilliseconds(struct timespec aTs) {
+uint64_t TimespecToMilliseconds(struct timespec aTs) {
   return aTs.tv_sec * 1000 + aTs.tv_nsec / kNSperMS;
 }
 
@@ -108,4 +108,4 @@ Maybe<uint64_t> NowIncludingSuspendMs() { return Nothing(); }
 
 #endif
 
-}  // namespace mozilla
+};  // namespace mozilla

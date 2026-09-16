@@ -174,7 +174,7 @@ static void SetIOSurfaceCommonProperties(
   auto colorSpace = CFTypeRefPtr<CGColorSpaceRef>::WrapUnderCreateRule(
       CGDisplayCopyColorSpace(CGMainDisplayID()));
   auto colorData = CFTypeRefPtr<CFDataRef>::WrapUnderCreateRule(
-      CGColorSpaceCopyICCData(colorSpace.get()));
+      CGColorSpaceCopyICCProfile(colorSpace.get()));
   IOSurfaceSetValue(surfaceRef.get(), CFSTR("IOSurfaceColorSpace"),
                     colorData.get());
 #endif
@@ -273,6 +273,51 @@ already_AddRefed<MacIOSurface> MacIOSurface::CreateBiPlanarSurface(
       CFArrayCreate(kCFAllocatorDefault, (const void**)planeProps, 2,
                     &kCFTypeArrayCallBacks));
   ::CFDictionaryAddValue(props.get(), kIOSurfacePlaneInfo, array.get());
+
+  CFTypeRefPtr<IOSurfaceRef> surfaceRef =
+      CFTypeRefPtr<IOSurfaceRef>::WrapUnderCreateRule(
+          ::IOSurfaceCreate(props.get()));
+
+  if (!surfaceRef) {
+    return nullptr;
+  }
+
+  SetIOSurfaceCommonProperties(surfaceRef, aColorSpace, aTransferFunction);
+
+  RefPtr<MacIOSurface> ioSurface = new MacIOSurface(
+      std::move(surfaceRef), aColorSpace, aTransferFunction, aAllowAlpha);
+
+  return ioSurface.forget();
+}
+
+/* static */
+already_AddRefed<MacIOSurface> MacIOSurface::CreateSinglePlanarSurface(
+    const IntSize& aSize, YUVColorSpace aColorSpace,
+    TransferFunction aTransferFunction, ColorRange aColorRange,
+    AllowAlpha aAllowAlpha) {
+  MOZ_ASSERT(aColorSpace == YUVColorSpace::BT601 ||
+            aColorSpace == YUVColorSpace::BT709);
+  MOZ_ASSERT(aColorRange == ColorRange::LIMITED ||
+            aColorRange == ColorRange::FULL);
+
+  auto props = CFTypeRefPtr<CFMutableDictionaryRef>::WrapUnderCreateRule(
+      ::CFDictionaryCreateMutable(kCFAllocatorDefault, 4,
+                                  &kCFTypeDictionaryKeyCallBacks,
+                                  &kCFTypeDictionaryValueCallBacks));
+  if (!props) return nullptr;
+
+  MOZ_ASSERT((size_t)aSize.width <= GetMaxWidth());
+  MOZ_ASSERT((size_t)aSize.height <= GetMaxHeight());
+
+  SetSizeProperties(props, aSize.width, aSize.height, 2);
+
+  if (aColorRange == ColorRange::LIMITED) {
+    AddDictionaryInt(props, kIOSurfacePixelFormat,
+                    (uint32_t)kCVPixelFormatType_422YpCbCr8_yuvs);
+  } else {
+    AddDictionaryInt(props, kIOSurfacePixelFormat,
+                    (uint32_t)kCVPixelFormatType_422YpCbCr8FullRange);
+  }
 
   CFTypeRefPtr<IOSurfaceRef> surfaceRef =
       CFTypeRefPtr<IOSurfaceRef>::WrapUnderCreateRule(

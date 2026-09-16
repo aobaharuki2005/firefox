@@ -34,16 +34,28 @@ class MacAutoreleasePool {
  * terminate.
  */
 static void LaunchTask(NSString* aPath, NSArray* aArguments) {
-  MacAutoreleasePool pool;
-
+  @try {
   NSTask* task = [[NSTask alloc] init];
+    if (@available(macOS 10.13, *)) {
   [task setExecutableURL:[NSURL fileURLWithPath:aPath]];
   if (aArguments) {
     [task setArguments:aArguments];
   }
   [task launchAndReturnError:nil];
+    } else {
+      NSArray* arguments = aArguments;
+      if (!arguments) {
+        arguments = @[];
+      }
+      task = [NSTask launchedTaskWithLaunchPath:aPath arguments:arguments];
+    }
   [task waitUntilExit];
+    if (@available(macOS 10.13, *)) {
   [task release];
+}
+  } @catch (NSException* e) {
+    NSLog(@"%@: %@", e.name, e.reason);
+  }
 }
 
 static void RegisterAppWithLaunchServices(NSString* aBundlePath) {
@@ -130,7 +142,6 @@ static BOOL ShouldCreateNewAppInstance(NSString* aBundlePath) {
 
 void LaunchMacApp(int argc, const char** argv, pid_t aWaitForPid) {
   MacAutoreleasePool pool;
-
   @try {
     NSString* launchPath = [NSString stringWithUTF8String:argv[0]];
     NSMutableArray* arguments = [NSMutableArray arrayWithCapacity:argc - 1];
@@ -152,6 +163,7 @@ void LaunchMacApp(int argc, const char** argv, pid_t aWaitForPid) {
       WaitForAppToTerminate(aWaitForPid, kWaitForExitSeconds);
     }
 
+    if(@available(macOS 10.15, *)) {
     // We use NSWorkspace to register the application into the
     // `TALAppsToRelaunchAtLogin` list and allow for macOS session resume.
     // This API only works with `.app`s.
@@ -174,9 +186,16 @@ void LaunchMacApp(int argc, const char** argv, pid_t aWaitForPid) {
              }
              dispatch_semaphore_signal(semaphore);
            }];
-
     // We use a semaphore to wait for the application to launch.
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    } else {
+      NSError *error=nil;
+      [[NSWorkspace sharedWorkspace] launchApplicationAtURL:[NSURL fileURLWithPath:launchPath]
+                                                    options:NSWorkspaceLaunchAsync|NSWorkspaceLaunchNewInstance
+                                              configuration:@{NSWorkspaceLaunchConfigurationArguments:arguments}
+                                                      error:&error];
+
+    }
   } @catch (NSException* e) {
     NSLog(@"%@: %@", e.name, e.reason);
   }
@@ -305,10 +324,10 @@ void CleanupElevatedMacUpdate(bool aFailureOccurred) {
                  error:nil];
   [manager removeItemAtPath:@"/Library/LaunchDaemons/org.mozilla.updater.plist"
                       error:nil];
-
   // The following call will terminate the current process due to the "remove"
-  // argument.
+  // argument
   LaunchTask(@"/bin/launchctl", @[ @"remove", @"org.mozilla.updater" ]);
+
 }
 
 // Note: Caller is responsible for freeing aArgv.
@@ -534,6 +553,7 @@ void SetGroupOwnershipAndPermissions(const char* aAppBundle) {
   }
 }
 
+
 bool PerformInstallationFromDMG(int argc, char** argv) {
   MacAutoreleasePool pool;
   if (argc < 4) {
@@ -544,8 +564,8 @@ bool PerformInstallationFromDMG(int argc, char** argv) {
   if ([[NSFileManager defaultManager] copyItemAtPath:bundlePath
                                               toPath:destPath
                                                error:nil]) {
-    StripQuarantineBit(destPath);
     RegisterAppWithLaunchServices(destPath);
+    StripQuarantineBit(destPath);
     return true;
   }
   return false;
