@@ -103,6 +103,7 @@ jobs:
 
       - name: Saving buildcache
         id: save-sccache-buildcache
+        if: always()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (27/6/2026)
         with:
           path: ~/Library/Caches/Mozilla.sccache
