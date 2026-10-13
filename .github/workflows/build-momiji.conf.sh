@@ -10,7 +10,7 @@ ac_add_options --target=x86_64-apple-darwin
 export MACOSX_DEPLOYMENT_TARGET=10.7
 
 # ============= SCCACHE ==============  
-ac_add_options --with-ccache="$HOME/.mozbuild/buildcache/bin/buildcache"
+ac_add_options --with-ccache="$HOME/.mozbuild/sccache/sccache"
 
 # ============ SDK ===================     
 ac_add_options --with-macos-sdk="$(xcrun --sdk macosx26.5 --show-sdk-path)"
