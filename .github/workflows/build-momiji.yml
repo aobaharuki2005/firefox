@@ -124,7 +124,7 @@ jobs:
           CFLAGS="-Os -D_MACPORTS_LEGACY_ALLOW_INSECURE_CCRANDOM=1" \
           CXXFLAGS="-Os -D_MACPORTS_LEGACY_ALLOW_INSECURE_CCRANDOM=1" \
           LDFLAGS="--target=x86_64-apple-macos10.7" \
-          make
+          make syslib
 
           cp lib/libMacportsLegacySystem.B.dylib /tmp/Momiji-Stable.app/Contents/MacOS
           pushd /tmp
