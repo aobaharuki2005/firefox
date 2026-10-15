@@ -22,8 +22,8 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (27/6/2026)
         with:
           path: ~/Library/Caches/Mozilla.sccache
-          key: ${{ runner.os }}-sccache-${{ github.run_id }}
-          restore-keys: ${{ runner.os }}-sccache-
+          key: ${{ runner.os }}-buildcache-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-buildcache-
       
       - name: Restore cached mozbuild toolchains
         id: restore-mozbuildcache
