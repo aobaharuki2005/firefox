@@ -1,0 +1,866 @@
+{
+  "off": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0",
+    "variableCSS": false,
+    "weights": [
+      {
+        "weight": 200,
+        "changed": 0,
+        "ink": 4136,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "389b261421788b8b35b99e2fa96a28d6175aa2a5457a3b4710abc80726ce7f72"
+      },
+      {
+        "weight": 400,
+        "changed": 2457,
+        "ink": 4136,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 2396,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "389b261421788b8b35b99e2fa96a28d6175aa2a5457a3b4710abc80726ce7f72"
+      },
+      {
+        "weight": 500,
+        "changed": 3130,
+        "ink": 4136,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 3044,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "389b261421788b8b35b99e2fa96a28d6175aa2a5457a3b4710abc80726ce7f72"
+      },
+      {
+        "weight": 550,
+        "changed": 3413,
+        "ink": 4136,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 3346,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "389b261421788b8b35b99e2fa96a28d6175aa2a5457a3b4710abc80726ce7f72"
+      },
+      {
+        "weight": 700,
+        "changed": 4585,
+        "ink": 4136,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 4517,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "389b261421788b8b35b99e2fa96a28d6175aa2a5457a3b4710abc80726ce7f72"
+      }
+    ],
+    "overlap": {
+      "changed": 123,
+      "ink": 4136,
+      "color": 0,
+      "maxDelta": 255,
+      "pixelsOver2": 123,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "transformed": {
+      "changed": 142,
+      "ink": 2869,
+      "color": 0,
+      "maxDelta": 255,
+      "pixelsOver2": 140,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "repeat": {
+      "changed": 0,
+      "ink": 4136,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "sizes": [
+      {
+        "size": 16,
+        "kind": "weight400",
+        "changed": 133,
+        "ink": 158,
+        "color": 0,
+        "maxDelta": 97,
+        "pixelsOver2": 115,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "weight700",
+        "changed": 175,
+        "ink": 158,
+        "color": 0,
+        "maxDelta": 249,
+        "pixelsOver2": 166,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "overlap",
+        "changed": 16,
+        "ink": 158,
+        "color": 0,
+        "maxDelta": 218,
+        "pixelsOver2": 13,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 24,
+        "kind": "weight400",
+        "changed": 255,
+        "ink": 288,
+        "color": 0,
+        "maxDelta": 146,
+        "pixelsOver2": 232,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "weight700",
+        "changed": 338,
+        "ink": 288,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 327,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "overlap",
+        "changed": 29,
+        "ink": 288,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 29,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 512,
+        "kind": "weight400",
+        "changed": 21651,
+        "ink": 53972,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 21374,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "weight700",
+        "changed": 54805,
+        "ink": 53972,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 54416,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "overlap",
+        "changed": 1063,
+        "ink": 53972,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 1063,
+        "advance": 512,
+        "referenceAdvance": 512
+      }
+    ],
+    "emoji": {
+      "changed": 0,
+      "ink": 11776,
+      "color": 11769,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "dom": {
+      "overlap_matches": false,
+      "weight400_matches": false,
+      "weight700_matches": false
+    },
+    "platform": {
+      "buildID": "20261018150825",
+      "graphics": {
+        "canvas": "skia",
+        "content": "skia",
+        "compositor": "WebRender (Software)"
+      },
+      "preferences": {
+        "gfx.font_rendering.legacy_macos.variations": false,
+        "gfx.font_rendering.legacy_macos.outlines": false,
+        "layout.css.font-variations.enabled": false
+      }
+    }
+  },
+  "variations": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0",
+    "variableCSS": true,
+    "weights": [
+      {
+        "weight": 200,
+        "changed": 0,
+        "ink": 4136,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "905e0f658dce770b3b81996930948deaa76fbf260ada02bd5552518713bc2fc3"
+      },
+      {
+        "weight": 400,
+        "changed": 0,
+        "ink": 4985,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "477eda0b150db744cbbe4a7b4286dc56a2a0e6ad00285bbcc9ead97146e5d825"
+      },
+      {
+        "weight": 500,
+        "changed": 0,
+        "ink": 5554,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "c01d99263a0e381f6cd154dc7eaeedfcb473a88578a4e7bd4a480ce2b4d4e848"
+      },
+      {
+        "weight": 550,
+        "changed": 0,
+        "ink": 5773,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "9cc055bc68d500abe18e9a46c36ef284010e0c4cb6ed63babc2a7039f1d64cdf"
+      },
+      {
+        "weight": 700,
+        "changed": 0,
+        "ink": 6823,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "85fc79321e94ec8ca276b11a2ea0cc4cfe248eac7b89617374a94ec3ca9c26af"
+      }
+    ],
+    "overlap": {
+      "changed": 123,
+      "ink": 4136,
+      "color": 0,
+      "maxDelta": 255,
+      "pixelsOver2": 123,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "transformed": {
+      "changed": 142,
+      "ink": 2869,
+      "color": 0,
+      "maxDelta": 255,
+      "pixelsOver2": 140,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "repeat": {
+      "changed": 0,
+      "ink": 5773,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "sizes": [
+      {
+        "size": 16,
+        "kind": "weight400",
+        "changed": 0,
+        "ink": 171,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "weight700",
+        "changed": 0,
+        "ink": 192,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "overlap",
+        "changed": 16,
+        "ink": 158,
+        "color": 0,
+        "maxDelta": 218,
+        "pixelsOver2": 13,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 24,
+        "kind": "weight400",
+        "changed": 0,
+        "ink": 321,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "weight700",
+        "changed": 0,
+        "ink": 395,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "overlap",
+        "changed": 29,
+        "ink": 288,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 29,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 512,
+        "kind": "weight400",
+        "changed": 0,
+        "ink": 66048,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "weight700",
+        "changed": 0,
+        "ink": 95649,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "overlap",
+        "changed": 1063,
+        "ink": 53972,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 1063,
+        "advance": 512,
+        "referenceAdvance": 512
+      }
+    ],
+    "emoji": {
+      "changed": 0,
+      "ink": 11776,
+      "color": 11769,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "dom": {
+      "overlap_matches": false,
+      "weight400_matches": true,
+      "weight700_matches": true
+    },
+    "platform": {
+      "buildID": "20261018150825",
+      "graphics": {
+        "canvas": "skia",
+        "content": "skia",
+        "compositor": "WebRender (Software)"
+      },
+      "preferences": {
+        "gfx.font_rendering.legacy_macos.variations": true,
+        "gfx.font_rendering.legacy_macos.outlines": false,
+        "layout.css.font-variations.enabled": true
+      }
+    }
+  },
+  "outlines": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0",
+    "variableCSS": false,
+    "weights": [
+      {
+        "weight": 200,
+        "changed": 0,
+        "ink": 3912,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "db236f8e40437d740a030f7c6432c2fd1a0754812bca44d96a37c70cc70dee1e"
+      },
+      {
+        "weight": 400,
+        "changed": 2268,
+        "ink": 3912,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 2220,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "db236f8e40437d740a030f7c6432c2fd1a0754812bca44d96a37c70cc70dee1e"
+      },
+      {
+        "weight": 500,
+        "changed": 2816,
+        "ink": 3912,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 2779,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "db236f8e40437d740a030f7c6432c2fd1a0754812bca44d96a37c70cc70dee1e"
+      },
+      {
+        "weight": 550,
+        "changed": 3113,
+        "ink": 3912,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 3081,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "db236f8e40437d740a030f7c6432c2fd1a0754812bca44d96a37c70cc70dee1e"
+      },
+      {
+        "weight": 700,
+        "changed": 4256,
+        "ink": 3912,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 4224,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "db236f8e40437d740a030f7c6432c2fd1a0754812bca44d96a37c70cc70dee1e"
+      }
+    ],
+    "overlap": {
+      "changed": 0,
+      "ink": 3912,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "transformed": {
+      "changed": 0,
+      "ink": 2581,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "repeat": {
+      "changed": 0,
+      "ink": 3912,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "sizes": [
+      {
+        "size": 16,
+        "kind": "weight400",
+        "changed": 147,
+        "ink": 140,
+        "color": 0,
+        "maxDelta": 81,
+        "pixelsOver2": 136,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "weight700",
+        "changed": 172,
+        "ink": 140,
+        "color": 0,
+        "maxDelta": 226,
+        "pixelsOver2": 168,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "overlap",
+        "changed": 0,
+        "ink": 140,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 24,
+        "kind": "weight400",
+        "changed": 253,
+        "ink": 240,
+        "color": 0,
+        "maxDelta": 125,
+        "pixelsOver2": 244,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "weight700",
+        "changed": 311,
+        "ink": 240,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 303,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "overlap",
+        "changed": 0,
+        "ink": 240,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 512,
+        "kind": "weight400",
+        "changed": 19728,
+        "ink": 52688,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 19589,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "weight700",
+        "changed": 52544,
+        "ink": 52688,
+        "color": 0,
+        "maxDelta": 255,
+        "pixelsOver2": 52407,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "overlap",
+        "changed": 0,
+        "ink": 52688,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 512,
+        "referenceAdvance": 512
+      }
+    ],
+    "emoji": {
+      "changed": 0,
+      "ink": 11776,
+      "color": 11769,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "dom": {
+      "overlap_matches": true,
+      "weight400_matches": false,
+      "weight700_matches": false
+    },
+    "platform": {
+      "buildID": "20261018150825",
+      "graphics": {
+        "canvas": "skia",
+        "content": "skia",
+        "compositor": "WebRender (Software)"
+      },
+      "preferences": {
+        "gfx.font_rendering.legacy_macos.variations": false,
+        "gfx.font_rendering.legacy_macos.outlines": true,
+        "layout.css.font-variations.enabled": false
+      }
+    }
+  },
+  "both": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:153.0) Gecko/20100101 Firefox/153.0",
+    "variableCSS": true,
+    "weights": [
+      {
+        "weight": 200,
+        "changed": 0,
+        "ink": 3912,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "fc4cb2ee66fa15a3c1bda41fbb638ded6ffda6da8bf44df37ea1ef5c9338aa5e"
+      },
+      {
+        "weight": 400,
+        "changed": 0,
+        "ink": 4624,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "9b29221a5cc82146af5a04a330812cc2ccb6b193308aaeb2fca43cdcdc5ba646"
+      },
+      {
+        "weight": 500,
+        "changed": 0,
+        "ink": 5141,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "4bdc7218aeb502ce6d435849a3035356761cd38996e5d8c6218f1f4f3ff54b3c"
+      },
+      {
+        "weight": 550,
+        "changed": 0,
+        "ink": 5385,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "f1d316d0866982986830f934b423c8d4d97d19c88ecab8ed31a9b0fa29d66a5b"
+      },
+      {
+        "weight": 700,
+        "changed": 0,
+        "ink": 6453,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 128,
+        "referenceAdvance": 128,
+        "sha256": "a627c3ad82961fb3892308bbab1fdcbcff9f9221964dc6d8dac322160bb2afac"
+      }
+    ],
+    "overlap": {
+      "changed": 0,
+      "ink": 3912,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "transformed": {
+      "changed": 0,
+      "ink": 2581,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "repeat": {
+      "changed": 0,
+      "ink": 5385,
+      "color": 0,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "sizes": [
+      {
+        "size": 16,
+        "kind": "weight400",
+        "changed": 0,
+        "ink": 147,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "weight700",
+        "changed": 0,
+        "ink": 170,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 16,
+        "kind": "overlap",
+        "changed": 0,
+        "ink": 140,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 16,
+        "referenceAdvance": 16
+      },
+      {
+        "size": 24,
+        "kind": "weight400",
+        "changed": 0,
+        "ink": 264,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "weight700",
+        "changed": 0,
+        "ink": 316,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 24,
+        "kind": "overlap",
+        "changed": 0,
+        "ink": 240,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 24,
+        "referenceAdvance": 24
+      },
+      {
+        "size": 512,
+        "kind": "weight400",
+        "changed": 0,
+        "ink": 64894,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "weight700",
+        "changed": 0,
+        "ink": 94770,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 512,
+        "referenceAdvance": 512
+      },
+      {
+        "size": 512,
+        "kind": "overlap",
+        "changed": 0,
+        "ink": 52688,
+        "color": 0,
+        "maxDelta": 0,
+        "pixelsOver2": 0,
+        "advance": 512,
+        "referenceAdvance": 512
+      }
+    ],
+    "emoji": {
+      "changed": 0,
+      "ink": 11776,
+      "color": 11769,
+      "maxDelta": 0,
+      "pixelsOver2": 0,
+      "advance": 128,
+      "referenceAdvance": 128
+    },
+    "dom": {
+      "overlap_matches": true,
+      "weight400_matches": true,
+      "weight700_matches": true
+    },
+    "platform": {
+      "buildID": "20261018150825",
+      "graphics": {
+        "canvas": "skia",
+        "content": "skia",
+        "compositor": "WebRender (Software)"
+      },
+      "preferences": {
+        "gfx.font_rendering.legacy_macos.variations": true,
+        "gfx.font_rendering.legacy_macos.outlines": true,
+        "layout.css.font-variations.enabled": true
+      }
+    }
+  }
+}
