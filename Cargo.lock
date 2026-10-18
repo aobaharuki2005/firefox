@@ -9439,6 +9439,7 @@ dependencies = [
  "dwrote",
  "euclid",
  "firefox-on-glean",
+ "foreign-types",
  "freetype",
  "glean",
  "lazy_static",

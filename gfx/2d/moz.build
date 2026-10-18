@@ -65,6 +65,7 @@ EXPORTS.mozilla.gfx += [
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] in ("cocoa", "uikit"):
     EXPORTS.mozilla.gfx += [
+        "LegacyMacFont.h",
         "MacIOSurface.h",
         "ScaledFontBase.h",
         "ScaledFontMac.h",
@@ -75,6 +76,12 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] in ("cocoa", "uikit"):
         "NativeFontResourceMac.cpp",
         "ScaledFontMac.cpp",
     ]
+    if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
+        LOCAL_INCLUDES += ["/gfx/harfbuzz/src"]
+        SOURCES += [
+            "LegacyMacFont.cpp",
+            "LegacyMacFontSettings.cpp",
+        ]
 elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
     EXPORTS.mozilla.gfx += [
         "DWriteSettings.h",

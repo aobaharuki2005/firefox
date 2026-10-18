@@ -83,6 +83,7 @@ class gfxMacFont final : public gfxFont {
   Metrics mMetrics;
 
   bool mVariationFont;  // true if font has OpenType variations
+  nsTArray<gfxFontVariation> mLegacyVariations;
 };
 
 #endif /* GFX_MACFONT_H */

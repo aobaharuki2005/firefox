@@ -22,6 +22,9 @@
 #include "gfxPlatform.h"  // just for HasVariationFontSupport()
 #include "nsCocoaFeatures.h"
 #include "mozilla/gfx/Logging.h"
+#ifdef MOZ_WIDGET_COCOA
+#  include "LegacyMacFont.h"
+#endif
 
 #ifdef MOZ_WIDGET_COCOA
 // prototype for private API
@@ -467,8 +470,8 @@ static bool GetVariationsForCTFont(CTFontRef aCTFont,
 bool ScaledFontMac::GetFontInstanceData(FontInstanceDataOutput aCb,
                                         void* aBaton) {
   // Collect any variation settings that were incorporated into the CTFont.
-  std::vector<FontVariation> variations;
-  if (!GetVariationsForCTFont(mCTFont, &variations)) {
+  std::vector<FontVariation> variations = mLegacyVariations;
+  if (variations.empty() && !GetVariationsForCTFont(mCTFont, &variations)) {
     return false;
   }
 
@@ -482,7 +485,11 @@ bool ScaledFontMac::GetWRFontInstanceOptions(
     Maybe<wr::FontInstanceOptions>* aOutOptions,
     Maybe<wr::FontInstancePlatformOptions>* aOutPlatformOptions,
     std::vector<FontVariation>* aOutVariations) {
-  GetVariationsForCTFont(mCTFont, aOutVariations);
+  if (!mLegacyVariations.empty()) {
+    *aOutVariations = mLegacyVariations;
+  } else {
+    GetVariationsForCTFont(mCTFont, aOutVariations);
+  }
 
   wr::FontInstanceOptions options = {};
   options.render_mode = wr::FontRenderMode::Subpixel;
@@ -733,6 +740,18 @@ CGFontRef UnscaledFontMac::CreateCGFontWithVariations(
   }
   MOZ_ASSERT(aVariations);
 
+#ifdef MOZ_WIDGET_COCOA
+  if (momiji_legacy_variations_enabled()) {
+    std::vector<MomijiFontVariation> variations;
+    variations.reserve(aVariationCount);
+    for (uint32_t i = 0; i < aVariationCount; ++i) {
+      variations.push_back({aVariations[i].mTag, aVariations[i].mValue});
+    }
+    return momiji_legacy_create_font(aFont, variations.data(),
+                                     variations.size());
+  }
+#endif
+
   AutoRelease<CFDictionaryRef> varDict(CreateVariationDictionaryOrNull(
       aFont, aCGAxesCache, aCTAxesCache, aVariationCount, aVariations));
   if (!varDict) {
@@ -755,7 +774,11 @@ already_AddRefed<ScaledFont> UnscaledFontMac::CreateScaledFont(
   const ScaledFontMac::InstanceData& instanceData =
       *reinterpret_cast<const ScaledFontMac::InstanceData*>(aInstanceData);
   RefPtr<ScaledFontMac> scaledFont;
-  if (mFontDesc) {
+  bool legacyVariations = false;
+#ifdef MOZ_WIDGET_COCOA
+  legacyVariations = momiji_legacy_variations_enabled();
+#endif
+  if (mFontDesc && !(legacyVariations && aNumVariations)) {
     AutoRelease<CTFontRef> font(
         CTFontCreateWithFontDescriptor(mFontDesc, aGlyphSize, nullptr));
     if (aNumVariations > 0) {
@@ -791,6 +814,9 @@ already_AddRefed<ScaledFont> UnscaledFontMac::CreateScaledFont(
                                    instanceData.mUseFontSmoothing,
                                    instanceData.mApplySyntheticBold,
                                    instanceData.mHasColorGlyphs);
+    if (legacyVariations && fontRef != mFont) {
+      scaledFont->SetLegacyVariations(aVariations, aNumVariations);
+    }
   }
   return scaledFont.forget();
 }

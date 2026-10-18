@@ -32,6 +32,7 @@ EXPORTS.harfbuzz += [
     'hb-shape-plan.h',
     'hb-shape.h',
     'hb-style.h',
+    'hb-subset.h',
     'hb-unicode.h',
     'hb-version.h',
     'hb.h',
