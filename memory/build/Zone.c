@@ -120,6 +120,10 @@ static void* zone_calloc(malloc_zone_t* zone, size_t num, size_t size) {
 }
 
 static void* zone_realloc(malloc_zone_t* zone, void* ptr, size_t size) {
+  // Lion's malloc_zone_realloc forwards realloc(NULL, size) directly to the
+  // zone callback. Newer Darwin versions handle this before calling the zone.
+  if (!ptr) return malloc_impl(size);
+
   if (malloc_usable_size_impl(ptr)) return realloc_impl(ptr, size);
 
   // Sometimes, system libraries call malloc_zone_* functions with the wrong

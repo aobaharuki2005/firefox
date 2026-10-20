@@ -626,11 +626,16 @@ static bool FindAndMaybeRemoveBundleBefore13(bool aAlsoRemove) {
   for (id item in loginItems) {
     // itemRef doesn't need released as it is owned by snapshot
     LSSharedFileListItemRef itemRef = (LSSharedFileListItemRef)item;
-    CFURLRef itemURLRef;
+    CFURLRef itemURLRef = nullptr;
 
-    itemURLRef = LSSharedFileListItemCopyResolvedURL(
-        itemRef, kLSSharesFileListEmptyOptions, nullptr);
-    if (!itemURLRef) {
+    // LSSharedFileListItemResolve is available from OS X 10.5
+    OSStatus status = LSSharedFileListItemResolve(
+        itemRef,
+        kLSSharesFileListEmptyOptions,
+        &itemURLRef,
+        nullptr);
+
+    if (status != noErr || !itemURLRef) {
       continue;
     }
 

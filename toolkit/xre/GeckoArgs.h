@@ -224,7 +224,6 @@ static CommandLineArg<UniqueFileHandle> sIPCHandle{"-ipcHandle", "ipchandle"};
 #if defined(XP_DARWIN)
 static CommandLineArg<UniqueMachSendRight> sIPCPort{"-ipcPort", "ipcport"};
 #endif
-
 static CommandLineArg<mozilla::ipc::ReadOnlySharedMemoryHandle> sJsInitHandle{
     "-jsInitHandle", "jsinithandle"};
 static CommandLineArg<mozilla::ipc::ReadOnlySharedMemoryHandle> sPrefsHandle{

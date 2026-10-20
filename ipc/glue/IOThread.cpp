@@ -13,7 +13,7 @@
 #if defined(XP_WIN)
 #  include "chrome/common/ipc_channel_win.h"
 #else
-#  if defined(XP_DARWIN)
+#  if defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
 #    include "chrome/common/ipc_channel_mach.h"
 #  endif
 #  include "chrome/common/ipc_channel_posix.h"
@@ -82,7 +82,7 @@ IOThreadParent::IOThreadParent() : IOThread("IPC I/O Parent") {
 #if defined(XP_WIN)
     return &IPC::ChannelWin::sKind;
 #else
-#  if defined(XP_DARWIN)
+#  if defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
     if (Preferences::GetBool("dom.ipc.backend.mach")) {
       return &IPC::ChannelMach::sKind;
     }

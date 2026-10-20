@@ -2047,6 +2047,7 @@ nsLocalFile::IsExecutable(bool* aResult) {
     }
   }
 
+  // On OS X, then query Launch Services.
 #ifdef MOZ_WIDGET_COCOA
   // Certain Mac applications, such as Classic applications, which
   // run under Rosetta, might not have the +x mode bit but are still
@@ -2056,16 +2057,15 @@ nsLocalFile::IsExecutable(bool* aResult) {
     return NS_ERROR_FAILURE;
   }
 
-  CFBooleanRef isApp = nullptr;
-  *aResult = ::CFURLCopyResourcePropertyForKey(url, kCFURLIsApplicationKey,
-                                               &isApp, nullptr) &&
-             (isApp == kCFBooleanTrue);
+  LSItemInfoRecord itemInfo;
+  OSStatus result =
+      ::LSCopyItemInfoForURL(url, kLSRequestAllInfo, &itemInfo);
   ::CFRelease(url);
-  if (isApp) {
-    ::CFRelease(isApp);
-  }
-  if (*aResult) {
-    return NS_OK;
+  if (result == noErr) {
+    if ((itemInfo.flags & kLSItemInfoIsApplication) != 0) {
+      *aResult = true;
+      return NS_OK;
+    }
   }
 #endif
 

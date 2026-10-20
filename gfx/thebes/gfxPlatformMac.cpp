@@ -1056,7 +1056,7 @@ nsTArray<uint8_t> gfxPlatformMac::GetPlatformCMSOutputProfileData() {
     return nsTArray<uint8_t>();
   }
 
-  CFDataRef iccp = ::CGColorSpaceCopyICCData(cspace);
+  CFDataRef iccp = ::CGColorSpaceCopyICCProfile(cspace);
 
   ::CFRelease(cspace);
 
@@ -1078,4 +1078,10 @@ nsTArray<uint8_t> gfxPlatformMac::GetPlatformCMSOutputProfileData() {
   return result;
 }
 
-bool gfxPlatformMac::CheckVariationFontSupport() { return true; }
+bool gfxPlatformMac::CheckVariationFontSupport() {
+  // We don't allow variation fonts to be enabled before 10.13,
+  // as although the Core Text APIs existed, they are known to be
+  // fairly buggy.
+  // (Note that Safari also requires 10.13 for variation-font support.)
+  return nsCocoaFeatures::OnHighSierraOrLater();
+}

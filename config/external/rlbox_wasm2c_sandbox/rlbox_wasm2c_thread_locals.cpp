@@ -15,11 +15,7 @@
 #  include "mozilla/rlbox/rlbox_wasm2c_tls.hpp"
 #  include "wasm-rt.h"
 
-#  ifdef WASM_RT_GROW_FAILED_CRASH_OR_REDIRECT
-#    include <mutex>
-#  else
 #    include "nsExceptionHandler.h"
-#  endif
 
 #  include "rlbox_wasm2c_thread_locals.h"
 
@@ -38,41 +34,10 @@ void moz_wasm2c_trap_handler(wasm_rt_trap_t code) {
 
 // The below function is called if a malloc in sandboxed code returns null
 // This indicates that the sandbox has run out of memory.
-#  ifdef WASM_RT_GROW_FAILED_CRASH_OR_REDIRECT
-
-static void (*gMemGrowFailedRedirect)() = nullptr;
-#    ifdef _WIN32
-MOZ_RUNINIT
-#    endif
-std::mutex gMemGrowFailedRedirectMutex;
-
-void moz_wasm2c_set_memgrow_redirect_target(void (*fn)()) {
-  const std::lock_guard<std::mutex> lock(gMemGrowFailedRedirectMutex);
-  gMemGrowFailedRedirect = fn;
-}
-
-void moz_wasm2c_memgrow_failed() {
-  void (*redirect)() = nullptr;
-  {
-    const std::lock_guard<std::mutex> lock(gMemGrowFailedRedirectMutex);
-    redirect = gMemGrowFailedRedirect;
-  }
-
-  if (redirect != nullptr) {
-    redirect();
-  } else {
-    MOZ_CRASH("wasm2c memory grow failed");
-  }
-}
-
-#  else
-
 void moz_wasm2c_memgrow_failed() {
   CrashReporter::RecordAnnotationBool(
       CrashReporter::Annotation::WasmLibrarySandboxMallocFailed, true);
 }
-
-#  endif
 
 // This function is called when mozalloc_handle_oom is called from within
 // the sandbox. We redirect to that function, ignoring the ctx argument, which

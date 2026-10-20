@@ -51,6 +51,14 @@ bool MachChildProcessCheckIn(
 //==============================================================================
 // Called by MacProcessLauncher to transfer ports to the child process, and
 // acquire the child process task port.
+#  if defined(MOZ_LEGACY_MACOS)
+mozilla::Result<mozilla::Ok, mozilla::ipc::LaunchError>
+MachHandleProcessCheckIn(
+    mach_port_t endpoint, pid_t child_pid, mach_msg_timeout_t timeout,
+    const std::vector<mozilla::UniqueMachSendRight>& send_rights,
+    std::vector<mozilla::UniqueMachReceiveRight>& receive_rights,
+    task_t* child_task);
+#  else
 using MachHandleProcessCheckInPromise =
     mozilla::MozPromise<task_t, mozilla::ipc::LaunchError, true>;
 RefPtr<MachHandleProcessCheckInPromise> MachHandleProcessCheckIn(
@@ -58,6 +66,7 @@ RefPtr<MachHandleProcessCheckInPromise> MachHandleProcessCheckIn(
     mozilla::TimeDuration timeout,
     std::vector<mozilla::UniqueMachSendRight> send_rights,
     std::vector<mozilla::UniqueMachReceiveRight> receive_rights);
+#  endif
 #endif
 
 #endif  // BASE_MACH_IPC_MAC_H_

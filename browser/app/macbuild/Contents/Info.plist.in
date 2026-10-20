@@ -190,8 +190,6 @@
 	<string>@MAC_APP_NAME@ @APP_VERSION@</string>
 	<key>CFBundleIconFile</key>
 	<string>firefox.icns</string>
-	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>@MOZ_MACBUNDLE_ID@</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -255,7 +253,7 @@
 	<key>LSFileQuarantineEnabled</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.15.0</string>
+	<string>10.6.0</string>
   <key>NSSupportsAutomaticGraphicsSwitching</key>
   <true/>
   <key>NSRequiresAquaSystemAppearance</key>

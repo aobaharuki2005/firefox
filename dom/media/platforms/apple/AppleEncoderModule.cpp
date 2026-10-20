@@ -10,6 +10,7 @@
 
 using mozilla::media::EncodeSupport;
 using mozilla::media::EncodeSupportSet;
+#include "AppleVTLinker.h"
 
 namespace mozilla {
 
@@ -45,6 +46,10 @@ EncodeSupportSet AppleEncoderModule::Supports(
 
 already_AddRefed<MediaDataEncoder> AppleEncoderModule::CreateVideoEncoder(
     const EncoderConfig& aConfig, const RefPtr<TaskQueue>& aTaskQueue) const {
+  if (!AppleVTLinker::Link()) {
+    NS_WARNING("Failed to link VideoToolbox framework for encoder");
+    return nullptr;
+  }
   RefPtr<MediaDataEncoder> encoder(new AppleVTEncoder(aConfig, aTaskQueue));
   return encoder.forget();
 }

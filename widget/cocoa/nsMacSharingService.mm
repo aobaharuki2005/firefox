@@ -6,11 +6,13 @@
 
 #include "nsMacSharingService.h"
 
+#include "jsapi.h"
 #include "js/Array.h"               // JS::NewArrayObject
 #include "js/PropertyAndElement.h"  // JS_SetElement, JS_SetProperty
-#include "jsapi.h"
 #include "mozilla/MacStringHelpers.h"
+#include "nsCocoaFeatures.h"
 #include "nsCocoaUtils.h"
+#include "SDKDeclarations.h"
 
 NS_IMPL_ISUPPORTS(nsMacSharingService, nsIMacSharingService)
 
@@ -28,6 +30,13 @@ NSString* const openSharingSubpaneActionKey = @"action";
 NSString* const openSharingSubpaneActionValue = @"revealExtensionPoint";
 NSString* const openSharingSubpaneProtocolKey = @"protocol";
 NSString* const openSharingSubpaneProtocolValue = @"com.apple.share-services";
+
+
+#if !defined(MAC_OS_X_VERSION_10_10) || \
+    MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_10
+NSString* const NSUserActivityTypeBrowsingWeb =
+    @"NSUserActivityTypeBrowsingWeb";
+#endif  // MAC_OS_X_VERSION_10_10
 
 // Expose the id so we can pass reference through to JS and back
 @interface NSSharingService (ExposeName)
@@ -113,7 +122,7 @@ nsresult nsMacSharingService::GetSharingProviders(
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
   NSURL* url = nsCocoaUtils::ToNSURL(aPageUrl);
-  if (!url) {
+  if (!url || !nsCocoaFeatures::OnMountainLionOrLater()) {
     // aPageUrl is not a valid URL.
     return NS_ERROR_FAILURE;
   }
@@ -179,6 +188,10 @@ nsMacSharingService::ShareUrl(const nsAString& aServiceName,
                               const nsAString& aPageTitle) {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
+  if (!nsCocoaFeatures::OnMountainLionOrLater()) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
   NSString* serviceName = nsCocoaUtils::ToNSString(aServiceName);
   NSSharingService* service =
       [NSSharingService sharingServiceNamed:serviceName];
@@ -194,9 +207,10 @@ nsMacSharingService::ShareUrl(const nsAString& aServiceName,
     return NS_ERROR_FAILURE;
   }
 
-  // Reminders fetch data from an activity, not the share data
-  if ([serviceName isEqual:oldRemindersServiceName] ||
-      [serviceName isEqual:newRemindersServiceName]) {
+  // Reminders fetch data from an activity, not the share data.
+  if (nsCocoaFeatures::OnYosemiteOrLater() &&
+      ([serviceName isEqual:oldRemindersServiceName] ||
+       [serviceName isEqual:newRemindersServiceName])) {
     NSUserActivity* shareActivity = [[[NSUserActivity alloc]
         initWithActivityType:NSUserActivityTypeBrowsingWeb] autorelease];
 
@@ -213,7 +227,11 @@ nsMacSharingService::ShareUrl(const nsAString& aServiceName,
     [service setDelegate:shareDelegate];  // weak reference
   }
 
-  [service performWithItems:@[ pageUrl ]];
+  NSArray* items = [[service name]
+                     isEqual:NSSharingServiceNamePostOnTwitter]
+                     ? @[ pageUrl, pageTitle ]
+                     : @[ pageUrl ];
+  [service performWithItems:items];
 
   return NS_OK;
 

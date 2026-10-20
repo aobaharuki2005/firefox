@@ -8,13 +8,12 @@
 #include <CoreServices/CoreServices.h>
 #include <Foundation/Foundation.h>
 #include <IOKit/IOKitLib.h>
-#include <os/log.h>
 #include <string.h>
 #include <sys/mount.h>
 #include <sys/param.h>
 
-#include "MacLaunchHelper.h"
 #include "MacRunFromDmgUtils.h"
+#include "MacLaunchHelper.h"
 
 #include "mozilla/ErrorResult.h"
 #include "mozilla/intl/Localization.h"
@@ -32,21 +31,10 @@
 #  include "nsUpdateDriver.h"
 #endif
 
-// Exported from toolkit/mozapps/dmgInstallHelper
-#import "dmgInstallProtocol.h"
-
-#ifndef MOZ_RUNINIT
-#  define MOZ_RUNINIT __attribute__((annotate("moz_global_var")))
-#endif
-
-MOZ_RUNINIT static const os_log_t runFromDMGLogger =
-    os_log_create("org.mozilla.firefox", "runFromDMG");
 
 // For IOKit docs, see:
 // https://developer.apple.com/documentation/iokit
 // https://developer.apple.com/library/archive/documentation/DeviceDrivers/Conceptual/IOKitFundamentals/
-
-using namespace mozilla::MacLaunchHelper;
 
 namespace mozilla::MacRunFromDmgUtils {
 
@@ -279,130 +267,61 @@ static void ShowInstallFailedDialog() {
   NS_OBJC_END_TRY_IGNORE_BLOCK;
 }
 
-// Install the DMGInstallHelper as an elevated helper and use it to install
-bool LaunchElevatedDmgInstall(NSString* aBundlePath, NSString* aDestPath) {
-  NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
-
-  os_log_info(runFromDMGLogger, "Launch elevated DMG Install");
-  bool didSucceed = InstallPrivilegedHelperWithId(
-      "org.mozilla.dmgInstallHelper", runFromDMGLogger);
-
-  os_log_info(runFromDMGLogger, "Installed helper: %s",
-              didSucceed ? "Yes" : "No");
+#ifdef MOZ_UPDATER
+static bool LaunchElevatedDmgInstall(NSString* aUpdaterPath, NSArray* aArguments) {
+  NSTask* task = [[NSTask alloc] init];
+  if (aArguments) {
+    [task setArguments:aArguments];
+  }
+  if (@available(macOS 10.13, *)) {
+    [task setExecutableURL:[NSURL fileURLWithPath:aUpdaterPath]];
+    [task launchAndReturnError:nil];
+  } else {
+    [task setLaunchPath:aUpdaterPath];
+    [task launch];
+  }
+  bool didSucceed = InstallElevatedUpdater();
+  [task waitUntilExit];
+  [task release];
   if (!didSucceed) {
-    return false;
+    AbortElevatedUpdate();
   }
-
-  NSXPCConnection* connection = [[[NSXPCConnection alloc]
-      initWithMachServiceName:@"org.mozilla.dmgInstallHelper"
-                      options:NSXPCConnectionPrivileged] autorelease];
-
-  if (connection == nil) {
-    os_log_error(runFromDMGLogger, "Failed connection");
-
-    return false;
-  }
-
-  __block BOOL remoteResult = NO;
-
-  NSXPCInterface* dmgInstaller =
-      [NSXPCInterface interfaceWithProtocol:@protocol(DMGInstallProtocol)];
-  connection.remoteObjectInterface = dmgInstaller;
-  connection.invalidationHandler = ^() {
-    os_log_error(runFromDMGLogger, "Connection invalidated");
-  };
-
-  connection.interruptionHandler = ^() {
-    os_log_error(runFromDMGLogger, "Connection interrupted");
-  };
-
-  [connection resume];
-
-  os_log_info(runFromDMGLogger, "Connection resumed");
-
-  id proxy = [connection synchronousRemoteObjectProxyWithErrorHandler:^(
-                             NSError* error) {
-    if (error != nil) {
-      remoteResult = NO;
-      os_log_error(runFromDMGLogger, "Remote proxy error: %{public}@", error);
-    }
-  }];
-
-  if (proxy == nil) {
-    os_log_error(runFromDMGLogger, "Failed to get proxy");
-
-    return false;
-  }
-
-  os_log_info(runFromDMGLogger, "Installing... %p", proxy);
-
-  [proxy
-      installDMGFromPath:aBundlePath
-               withReply:^(BOOL result) {
-                 os_log_info(runFromDMGLogger, "Got response: %s",
-                             result ? "success" : "failure");
-                 remoteResult = result;
-
-                 os_log_info(runFromDMGLogger, "Requesting helper terminate");
-
-                 [proxy terminateDMGInstallHelper];
-                 [connection invalidate];
-               }];
-
-  os_log_info(runFromDMGLogger, "Exiting: %s",
-              remoteResult ? "success" : "failure");
-  return remoteResult;
-
-  NS_OBJC_END_TRY_BLOCK_RETURN(false);
+  return didSucceed;
 }
+#endif
 
 // Note: both arguments are expected to contain the app name (to end with
 // '.app').
 static bool InstallFromPath(NSString* aBundlePath, NSString* aDestPath) {
-  os_log_info(runFromDMGLogger,
-              "Installing from path: %{public}@ to %{public}@", aBundlePath,
-              aDestPath);
   bool installSuccessful = false;
   NSFileManager* fileManager = [NSFileManager defaultManager];
 
-  bool alwaysElevate = false;
-#ifdef DMG_INSTALL_HELPER_DEBUG
-  alwaysElevate = (getenv("MOZ_DMG_INSTALL_HELPER_ALWAYS_ELEVATE") != nullptr);
-  os_log_info(runFromDMGLogger, "Always elevate: %{public}s",
-              alwaysElevate ? "yes" : "no");
-#endif
-
-  if (!alwaysElevate && [fileManager copyItemAtPath:aBundlePath
-                                             toPath:aDestPath
-                                              error:nil]) {
+  if ([fileManager copyItemAtPath:aBundlePath
+                           toPath:aDestPath
+                            error:nil]) {
     installSuccessful = true;
   }
 
-  os_log_info(runFromDMGLogger, "Unelevated installation: %s",
-              installSuccessful ? "success" : "failed");
-
-  // The installation may have been unsuccessful if the user did not have the
-  // rights to write to the Applications directory. Check for this situation and
-  // launch an elevated helper application.
+#ifdef MOZ_UPDATER
   NSString* destDir = [aDestPath stringByDeletingLastPathComponent];
-  BOOL isWritable =
-      !alwaysElevate && [fileManager isWritableFileAtPath:destDir];
-  if (!installSuccessful && !isWritable) {
-    os_log_info(runFromDMGLogger, "Installing elevated");
+  BOOL isWritable = [fileManager isWritableFileAtPath:destDir];
 
-    installSuccessful = LaunchElevatedDmgInstall(aBundlePath, aDestPath);
-    if (!installSuccessful) {
-      os_log_error(runFromDMGLogger, "Elevated DMG install failed.");
-      return false;
-    }
+  if (!installSuccessful && !isWritable) {
+    NSString* updaterBinPath = [NSString pathWithComponents:@[
+      aBundlePath, @"Contents", @"MacOS",
+      [NSString stringWithUTF8String:UPDATER_APP], @"Contents", @"MacOS",
+      [NSString stringWithUTF8String:UPDATER_BIN]
+    ]];
+
+    NSArray* arguments = @[ @"-dmgInstall", aBundlePath, aDestPath ];
+    LaunchElevatedDmgInstall(updaterBinPath, arguments);
+    installSuccessful = [fileManager fileExistsAtPath:aDestPath];
   }
+#endif
 
   if (!installSuccessful) {
-    os_log_error(runFromDMGLogger, "Unknown install failure.");
     return false;
   }
-
-  os_log_info(runFromDMGLogger, "Installed successful");
 
   // Pin to dock:
   nsresult rv;
@@ -507,7 +426,9 @@ bool MaybeInstallAndRelaunch() {
     bool isTranslocated = false;
     if (!isFromDmg) {
       NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
-      if ([bundlePath containsString:@"/AppTranslocation/"]) {
+      // -[NSString containsString:] is unavailable on macOS 10.7.
+      // if ([bundlePath containsString:@"/AppTranslocation/"]) {
+      if ([bundlePath rangeOfString:@"/AppTranslocation/"].location != NSNotFound) {
         isTranslocated = true;
       }
     }

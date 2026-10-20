@@ -74,7 +74,6 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
     extra_files = [
         (f"{branding}/firefox.icns", "Resources/firefox.icns"),
         (f"{branding}/document.icns", "Resources/document.icns"),
-        (f"{branding}/Assets.car", "Resources/Assets.car"),
     ]
     if CONFIG["MOZ_UPDATER"]:
         extra_files.append((
@@ -206,6 +205,7 @@ if CONFIG["OS_ARCH"] == "Darwin":
     OS_LIBS += [
         "-framework CoreFoundation",
     ]
+    LDFLAGS += ["-Wl,-rpath,@executable_path/./"]
 
 if CONFIG["MOZ_SANDBOX"] and CONFIG["OS_ARCH"] == "WINNT":
     # For sandbox includes and the include dependencies those have

@@ -868,6 +868,7 @@ extern "C" {
     pub static kMIDIPropertyDisplayName: CFStringRef;
 }
 extern "C" {
+    #[linkage = "extern_weak"]
     pub static kMIDIPropertyProtocolID: CFStringRef;
 }
 extern "C" {
@@ -916,12 +917,25 @@ extern "C" {
     ) -> OSStatus;
 }
 extern "C" {
-    pub fn MIDIInputPortCreateWithBlock(
+    #[linkage = "extern_weak"]
+    #[link_name = "MIDIInputPortCreateWithBlock"]
+    static MIDIInputPortCreateWithBlock_weak: Option<
+        unsafe extern "C" fn(
         client: MIDIClientRef,
         portName: CFStringRef,
         outPort: *mut MIDIPortRef,
         readBlock: MIDIReadBlock,
-    ) -> OSStatus;
+        ) -> OSStatus,
+    >;
+}
+pub unsafe fn MIDIInputPortCreateWithBlock(
+        client: MIDIClientRef,
+        portName: CFStringRef,
+        outPort: *mut MIDIPortRef,
+        readBlock: MIDIReadBlock,
+) -> OSStatus {
+    MIDIInputPortCreateWithBlock_weak
+        .expect("MIDIInputPortCreateWithBlock is unavailable")(client, portName, outPort, readBlock)
 }
 extern "C" {
     pub fn MIDIOutputPortCreate(
@@ -1115,11 +1129,22 @@ extern "C" {
     ) -> OSStatus;
 }
 extern "C" {
-    pub fn MIDISendEventList(
+    #[linkage = "extern_weak"]
+    #[link_name = "MIDISendEventList"]
+    static MIDISendEventList_weak: Option<
+        unsafe extern "C" fn(
         port: MIDIPortRef,
         dest: MIDIEndpointRef,
         evtlist: *const MIDIEventList,
-    ) -> OSStatus;
+        ) -> OSStatus,
+    >;
+}
+pub unsafe fn MIDISendEventList(
+        port: MIDIPortRef,
+        dest: MIDIEndpointRef,
+        evtlist: *const MIDIEventList,
+) -> OSStatus {
+    MIDISendEventList_weak.expect("MIDISendEventList is unavailable")(port, dest, evtlist)
 }
 extern "C" {
     pub fn MIDISend(
@@ -1145,7 +1170,17 @@ extern "C" {
     ) -> OSStatus;
 }
 extern "C" {
-    pub fn MIDIReceivedEventList(src: MIDIEndpointRef, evtlist: *const MIDIEventList) -> OSStatus;
+    #[linkage = "extern_weak"]
+    #[link_name = "MIDIReceivedEventList"]
+    static MIDIReceivedEventList_weak: Option<
+        unsafe extern "C" fn(src: MIDIEndpointRef, evtlist: *const MIDIEventList) -> OSStatus,
+    >;
+}
+pub unsafe fn MIDIReceivedEventList(
+    src: MIDIEndpointRef,
+    evtlist: *const MIDIEventList,
+) -> OSStatus {
+    MIDIReceivedEventList_weak.expect("MIDIReceivedEventList is unavailable")(src, evtlist)
 }
 extern "C" {
     pub fn MIDIReceived(src: MIDIEndpointRef, pktlist: *const MIDIPacketList) -> OSStatus;
@@ -1157,20 +1192,46 @@ extern "C" {
     pub fn MIDIRestart() -> OSStatus;
 }
 extern "C" {
-    pub fn MIDIEventListInit(
+    #[linkage = "extern_weak"]
+    #[link_name = "MIDIEventListInit"]
+    static MIDIEventListInit_weak: Option<
+        unsafe extern "C" fn(
+            evtlist: *mut MIDIEventList,
+            protocol: MIDIProtocolID,
+        ) -> *mut MIDIEventPacket,
+    >;
+}
+pub unsafe fn MIDIEventListInit(
         evtlist: *mut MIDIEventList,
         protocol: MIDIProtocolID,
-    ) -> *mut MIDIEventPacket;
+) -> *mut MIDIEventPacket {
+    MIDIEventListInit_weak.expect("MIDIEventListInit is unavailable")(evtlist, protocol)
 }
 extern "C" {
-    pub fn MIDIEventListAdd(
+    #[linkage = "extern_weak"]
+    #[link_name = "MIDIEventListAdd"]
+    static MIDIEventListAdd_weak: Option<
+        unsafe extern "C" fn(
+            evtlist: *mut MIDIEventList,
+            listSize: ByteCount,
+            curPacket: *mut MIDIEventPacket,
+            time: MIDITimeStamp,
+            wordCount: ByteCount,
+            words: *const UInt32,
+        ) -> *mut MIDIEventPacket,
+    >;
+}
+pub unsafe fn MIDIEventListAdd(
         evtlist: *mut MIDIEventList,
         listSize: ByteCount,
         curPacket: *mut MIDIEventPacket,
         time: MIDITimeStamp,
         wordCount: ByteCount,
         words: *const UInt32,
-    ) -> *mut MIDIEventPacket;
+) -> *mut MIDIEventPacket {
+    MIDIEventListAdd_weak.expect("MIDIEventListAdd is unavailable")(
+        evtlist, listSize, curPacket, time, wordCount, words,
+    )
 }
 extern "C" {
     pub fn MIDIPacketListInit(pktlist: *mut MIDIPacketList) -> *mut MIDIPacket;

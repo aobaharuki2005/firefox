@@ -17,7 +17,7 @@
 // We need this to declare base::MessagePumpWin::Dispatcher, which we should
 // really just eliminate.
 #  include "base/message_pump_win.h"
-#elif defined(XP_DARWIN)
+#elif defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
 #  include "base/message_pump_kqueue.h"
 #else
 #  include "base/message_pump_libevent.h"
@@ -322,7 +322,7 @@ class MessageLoop : public base::MessagePump::Delegate {
   base::MessagePumpWin* pump_win() {
     return static_cast<base::MessagePumpWin*>(pump_.get());
   }
-#elif defined(XP_DARWIN)
+#elif defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
   base::MessagePumpKqueue* pump_kqueue() {
     return static_cast<base::MessagePumpKqueue*>(pump_.get());
   }
@@ -524,7 +524,7 @@ class MessageLoopForIO : public MessageLoop {
     return static_cast<base::MessagePumpForIO*>(pump_.get());
   }
 
-#elif defined(XP_DARWIN)
+#elif defined(XP_DARWIN) && !defined(MOZ_LEGACY_MACOS)
 
   typedef base::MessagePumpKqueue::Watcher Watcher;
   typedef base::MessagePumpKqueue::FileDescriptorWatcher FileDescriptorWatcher;
@@ -545,7 +545,6 @@ class MessageLoopForIO : public MessageLoop {
   bool WatchMachReceivePort(mach_port_t port,
                             MachPortWatchController* controller,
                             MachPortWatcher* delegate);
-
 #else
   typedef base::MessagePumpLibevent::Watcher Watcher;
   typedef base::MessagePumpLibevent::FileDescriptorWatcher

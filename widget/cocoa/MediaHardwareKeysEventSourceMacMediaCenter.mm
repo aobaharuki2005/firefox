@@ -203,8 +203,9 @@ void MediaHardwareKeysEventSourceMacMediaCenter::SetMediaMetadata(
   [nowPlayingInfo setObject:nsCocoaUtils::ToNSString(aMetadata.mAlbum)
                      forKey:MPMediaItemPropertyAlbumTitle];
 
-  bool remove = true;
-  for (const dom::MediaImageData& imageData : aMetadata.mArtwork) {
+  if (@available(macOS 10.13.2, *)) {
+    bool remove = true;
+    for (const dom::MediaImageData& imageData : aMetadata.mArtwork) {
     if (!imageData.mDataSurface) {
       continue;
     }
@@ -242,10 +243,11 @@ void MediaHardwareKeysEventSourceMacMediaCenter::SetMediaMetadata(
     mCurrentImageUrl = imageData.mSrc;
     remove = false;
     break;
-  }
+    }
 
-  if (remove) {
-    [nowPlayingInfo removeObjectForKey:MPMediaItemPropertyArtwork];
+    if (remove) {
+      [nowPlayingInfo removeObjectForKey:MPMediaItemPropertyArtwork];
+    }
   }
 
   // The procedure of updating `nowPlayingInfo` is actually an async operation

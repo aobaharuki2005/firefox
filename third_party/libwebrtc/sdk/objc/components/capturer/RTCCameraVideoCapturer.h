@@ -30,6 +30,9 @@ RTC_OBJC_EXPORT
     (NSArray<AVCaptureDeviceType> *)deviceTypes;
 // Returns list of default capture devices types
 + (NSArray<AVCaptureDeviceType> *)defaultCaptureDeviceTypes;
+// Returns video capture devices using the API available before discovery
+// sessions were introduced.
++ (NSArray<AVCaptureDevice *> *)legacyCaptureDevices;
 // Returns list of formats that are supported by this class for this device.
 + (NSArray<AVCaptureDeviceFormat *> *)supportedFormatsForDevice:
     (AVCaptureDevice *)device;

@@ -505,7 +505,7 @@ impl Config {
                     *,
                 };
                 #[link(name = "Foundation", kind = "framework")]
-                extern "system" {
+                unsafe extern "system" {
                     fn NSSearchPathForDirectoriesInDomains(
                         directory: usize,
                         domain_mask: usize,

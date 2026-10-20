@@ -103,9 +103,9 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
         "-framework Cocoa",
         "-framework SystemConfiguration",
     ]
-    if link_with_nss:
+    if link_with_nss or CONFIG["MOZ_LEGACY_MACOS"]:
         LDFLAGS += ["-Wl,-rpath,@executable_path/../../../"]
-    else:
+    if not link_with_nss:
         OS_LIBS += [
             "-framework Security",
         ]

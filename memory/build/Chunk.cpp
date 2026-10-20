@@ -491,7 +491,7 @@ void* pages_mmap_aligned(size_t size, size_t alignment,
   return ret;
 }
 
-constinit AddressRadixTree<(sizeof(void*) << 3) - LOG2(kChunkSize)> gChunkRTree;
+AddressRadixTree<(sizeof(void*) << 3) - LOG2(kChunkSize)> gChunkRTree;
 
 #ifdef MOZ_DEBUG
 void chunk_assert_zero(void* aPtr, size_t aSize) {
