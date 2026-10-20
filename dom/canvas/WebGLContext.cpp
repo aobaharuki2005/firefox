@@ -341,6 +341,12 @@ bool WebGLContext::CreateAndInitGL(
     flags |= gl::CreateContextFlags::REQUIRE_COMPAT_PROFILE;
   }
 
+#ifdef MOZ_WIDGET_COCOA
+  if (!IsWebGL2() && !nsCocoaFeatures::OnMountainLionOrLater()) {
+    flags |= gl::CreateContextFlags::REQUIRE_COMPAT_PROFILE;
+  }
+#endif
+
   // --
 
   const bool useEGL = PR_GetEnv("MOZ_WEBGL_FORCE_EGL");

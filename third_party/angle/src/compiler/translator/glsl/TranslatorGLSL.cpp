@@ -291,6 +291,30 @@ void TranslatorGLSL::writeExtensionBehavior(TIntermNode *root,
             continue;
         }
 
+        if (getOutputType() == SH_GLSL_COMPATIBILITY_OUTPUT)
+        {
+            // For GLSL output, we don't need to emit most extensions explicitly,
+            // but some we need to translate in GL compatibility profile.
+            if (iter.first == TExtension::EXT_shader_texture_lod)
+            {
+                sink << "#extension GL_ARB_shader_texture_lod : " << GetBehaviorString(iter.second)
+                     << "\n";
+            }
+
+            if (iter.first == TExtension::EXT_draw_buffers)
+            {
+                sink << "#extension GL_ARB_draw_buffers : " << GetBehaviorString(iter.second)
+                     << "\n";
+            }
+
+            if (iter.first == TExtension::EXT_geometry_shader ||
+                iter.first == TExtension::OES_geometry_shader)
+            {
+                sink << "#extension GL_ARB_geometry_shader4 : " << GetBehaviorString(iter.second)
+                     << "\n";
+            }
+        }
+
         const bool isMultiview =
             (iter.first == TExtension::OVR_multiview) || (iter.first == TExtension::OVR_multiview2);
         if (isMultiview)
@@ -400,7 +424,7 @@ void TranslatorGLSL::writeExtensionBehavior(TIntermNode *root,
 
     if (usesTextureCubeMapArray)
     {
-        if (getOutputType() >= SH_GLSL_150_CORE_OUTPUT && getOutputType() < SH_GLSL_400_CORE_OUTPUT)
+        if (getOutputType() >= SH_GLSL_COMPATIBILITY_OUTPUT && getOutputType() < SH_GLSL_400_CORE_OUTPUT)
         {
             sink << "#extension GL_ARB_texture_cube_map_array : enable\n";
         }
@@ -413,7 +437,7 @@ void TranslatorGLSL::writeExtensionBehavior(TIntermNode *root,
 
     if (usesTextureBuffer)
     {
-        if (getOutputType() >= SH_GLSL_150_CORE_OUTPUT && getOutputType() < SH_GLSL_400_CORE_OUTPUT)
+        if (getOutputType() >= SH_GLSL_COMPATIBILITY_OUTPUT && getOutputType() < SH_GLSL_400_CORE_OUTPUT)
         {
             sink << "#extension GL_ARB_texture_buffer_objects : enable\n";
         }

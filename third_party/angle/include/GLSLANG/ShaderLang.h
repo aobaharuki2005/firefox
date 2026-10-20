@@ -50,6 +50,9 @@ enum ShShaderOutput
     SH_ESSL_OUTPUT,
 
     // GLSL output only supported in some configurations.
+    SH_GLSL_COMPATIBILITY_OUTPUT,
+
+    // GLSL output only supported in some configurations.
     SH_GLSL_150_CORE_OUTPUT,
     SH_GLSL_330_CORE_OUTPUT,
     SH_GLSL_400_CORE_OUTPUT,

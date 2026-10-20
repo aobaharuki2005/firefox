@@ -29,6 +29,8 @@ int ShaderOutputTypeToGLSLVersion(ShShaderOutput output)
             return GLSL_VERSION_440;
         case SH_GLSL_450_CORE_OUTPUT:
             return GLSL_VERSION_450;
+        case SH_GLSL_COMPATIBILITY_OUTPUT:
+            return GLSL_VERSION_110;
         default:
             UNREACHABLE();
             return 0;

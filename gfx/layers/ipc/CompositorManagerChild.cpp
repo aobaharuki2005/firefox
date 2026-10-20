@@ -16,6 +16,10 @@
 #include "mozilla/layers/CompositorManagerParent.h"
 #include "mozilla/layers/CompositorThread.h"
 
+#ifdef XP_MACOSX
+#  include "nsCocoaFeatures.h"
+#endif
+
 namespace mozilla {
 namespace layers {
 
@@ -232,6 +236,13 @@ void CompositorManagerChild::SetReplyTimeout() {
   if (XRE_IsParentProcess() && GPUProcessManager::Get()->GetGPUChild()) {
     int32_t timeout =
         StaticPrefs::layers_gpu_process_ipc_reply_timeout_ms_AtStartup();
+#ifdef XP_MACOSX
+    // Since some of the GLSL optimizations are disabled on <10.8, the
+    // GPU compiler can take longer, don't let watchdog kill it
+    if (!nsCocoaFeatures::OnMountainLionOrLater() && timeout < 30000) {
+      timeout = 30000;
+    }
+#endif
     SetReplyTimeoutMs(timeout);
   }
 #endif

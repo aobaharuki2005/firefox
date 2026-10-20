@@ -505,7 +505,14 @@ bool WebGLContext::InitAndValidateGL(FailureReason* const out_failReason) {
     gl->fEnable(LOCAL_GL_TEXTURE_CUBE_MAP_SEAMLESS);
   }
 
-  if (!gl->IsGLES() && gl->ShadingLanguageVersion() < 150) {
+  bool allowLegacyMacGLSL = false;
+#if defined(MOZ_WIDGET_COCOA)
+  allowLegacyMacGLSL =
+      !IsWebGL2() && gl->IsCompatibilityProfile() &&
+      !nsCocoaFeatures::OnMountainLionOrLater();
+#endif
+  if (!gl->IsGLES() && gl->ShadingLanguageVersion() < 150 &&
+      !allowLegacyMacGLSL) {
     const nsPrintfCString reason("GL_SHADING_LANGUAGE_VERSION: %u < 150!",
                                  gl->ShadingLanguageVersion());
     *out_failReason = {"FEATURE_FAILURE_WEBGL_GLSL_VERSION", reason};

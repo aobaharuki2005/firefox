@@ -394,7 +394,13 @@ var dataProviders = {
 
   processes: async function processes(done) {
     let remoteTypes = {};
-    const processInfo = await ChromeUtils.requestProcInfo();
+    let processInfo;
+    try {
+      processInfo = await ChromeUtils.requestProcInfo();
+    } catch (e) {
+      console.error("Unable to collect process information", e);
+      processInfo = { children: [] };
+    }
     for (let i = 0; i < processInfo.children.length; i++) {
       let remoteType;
       try {

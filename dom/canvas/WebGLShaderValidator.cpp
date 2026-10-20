@@ -16,6 +16,10 @@
 #include "mozilla/gfx/Logging.h"
 #include "nsPrintfCString.h"
 
+#ifdef MOZ_WIDGET_COCOA
+#  include "nsCocoaFeatures.h"
+#endif
+
 namespace mozilla {
 namespace webgl {
 
@@ -88,6 +92,12 @@ static ShShaderOutput ShaderOutput(gl::GLContext* gl) {
   if (gl->IsGLES()) {
     return SH_ESSL_OUTPUT;
   }
+#ifdef MOZ_WIDGET_COCOA
+  if (gl->IsCompatibilityProfile() &&
+      !nsCocoaFeatures::OnMountainLionOrLater()) {
+    return SH_GLSL_COMPATIBILITY_OUTPUT;
+  }
+#endif
   uint32_t version = gl->ShadingLanguageVersion();
   switch (version) {
     case 150:

@@ -1117,7 +1117,8 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
 
     // gl_Position may have already been initialized among other output variables, in that case
     // we don't need to initialize it twice.
-    if (!mGLPositionInitialized && compileOptions.initGLPosition)
+    if (mShaderType == GL_VERTEX_SHADER && !mGLPositionInitialized &&
+        (compileOptions.initGLPosition || mOutputType == SH_GLSL_COMPATIBILITY_OUTPUT))
     {
         if (!initializeGLPosition(root))
         {

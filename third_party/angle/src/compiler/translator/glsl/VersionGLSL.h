@@ -12,6 +12,7 @@
 namespace sh
 {
 
+static const int GLSL_VERSION_110 = 110;
 static const int GLSL_VERSION_150 = 150;
 static const int GLSL_VERSION_330 = 330;
 static const int GLSL_VERSION_400 = 400;

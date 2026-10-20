@@ -352,7 +352,9 @@ impl ProgramSourceInfo {
         // edit would be silently ignored wherever optimized shaders are in use.
         let has_source_override = device.has_shader_source_override_for(name);
 
-        let optimized_source = if device.use_optimized_shaders && !has_source_override {
+        let optimized_source = if device.use_optimized_shaders && !has_source_override &&
+            !(device.has_lion_shader_compiler &&
+              is_lion_optimized_shader_crasher(&full_name)) {
             OPTIMIZED_SHADERS.get(&(gl_version, &full_name)).or_else(|| {
                 warn!("Missing optimized shader source for {}", &full_name);
                 None
@@ -497,6 +499,15 @@ impl ProgramSourceInfo {
     fn from_source_override(&self) -> bool {
         false
     }
+}
+
+fn is_lion_optimized_shader_crasher(name: &str) -> bool {
+    name.starts_with("brush_blend") ||
+        name.starts_with("brush_yuv_image") ||
+        (name.starts_with("composite") && name.ends_with("YUV")) ||
+        name.starts_with("cs_clip_rectangle") ||
+        name == "cs_svg_filter_node" ||
+        (name.starts_with("ps_text_run") && name.contains("GLYPH_TRANSFORM"))
 }
 
 impl VertexUsageHint {
@@ -644,6 +655,10 @@ pub struct GlDevice {
 
     /// Whether to use shaders that have been optimized at build time.
     use_optimized_shaders: bool,
+
+    /// Whether this device uses Lion's GLSL compiler, which crashes on a small
+    /// set of offline-optimized WebRender shaders.
+    has_lion_shader_compiler: bool,
 
     max_texture_size: i32,
     cached_programs: Option<Rc<ProgramCache>>,
@@ -794,6 +809,9 @@ impl GlDevice {
         info!("Renderer: {}", renderer_name);
         let version_string = gl.get_string(gl::VERSION);
         info!("Version: {}", version_string);
+        // Apple's OpenGL drivers use the platform GL stack's major version in
+        // their version string. Lion reports vendor versions beginning with 7.
+        let has_lion_shader_compiler = version_string.contains("-7.");
         info!("Max texture size: {}", max_texture_size);
 
         let mut extension_count = [0];
@@ -1241,6 +1259,7 @@ impl GlDevice {
             annotate_draw_call_crashes: false,
             resource_override_path,
             use_optimized_shaders,
+            has_lion_shader_compiler,
             upload_method,
             use_batched_texture_uploads: requires_batched_texture_uploads.unwrap_or(false),
             use_draw_calls_for_texture_copy: false,
