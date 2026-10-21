@@ -83,7 +83,7 @@ aboutdialog-submit-feedback =
 
 # Phần nội dung thay đổi theo yêu cầu của bạn
 community-exp = { -brand-full-name } (community build) version { aboutDialog-version }
-community-2 = Based on Mozilla Firefox 140 ESR. Licensed under <label data-l10n-name="community-mozillaLink">MPL 2.0</label>. 
+community-2 = Based on Mozilla Firefox 153 ESR. Licensed under <label data-l10n-name="community-mozillaLink">MPL 2.0</label>. 
 helpus = Source: https://github.com/aobaharuki2005/momiji-web-browser. This is an independent community project, not affiliated with Mozilla Foundation. 
 
 aboutDialog-version = { $version } ({ $bits }-bit) 
