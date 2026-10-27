@@ -8,6 +8,7 @@
 #include "mozilla/Sprintf.h"
 #include "mozilla/StaticPrefs_gfx.h"
 #include "mozilla/gfx/ScaledFontMac.h"
+#include "mozilla/gfx/LegacyMacFont.h"
 
 #include <algorithm>
 
@@ -53,7 +54,7 @@ gfxMacFont::gfxMacFont(const RefPtr<UnscaledFontMac>& aUnscaledFont,
     AutoTArray<gfxFontVariation, 4> vars;
     aFontEntry->GetVariationsForStyle(vars, *aFontStyle);
 
-    if (aFontEntry->HasOpticalSize()) {
+    if (aFontEntry->HasOpticalSize() && !momiji_legacy_variations_enabled()) {
       // Because of a Core Text bug, we need to ensure that if the font has
       // an 'opsz' axis, it is always explicitly set, and NOT to the font's
       // default value. (See bug 1457417, bug 1478720.)
@@ -108,6 +109,9 @@ gfxMacFont::gfxMacFont(const RefPtr<UnscaledFontMac>& aUnscaledFont,
     mCGFont = UnscaledFontMac::CreateCGFontWithVariations(
         baseFont, aUnscaledFont->CGAxesCache(), aUnscaledFont->CTAxesCache(),
         vars.Length(), vars.Elements());
+    if (mCGFont && momiji_legacy_variations_enabled()) {
+      mLegacyVariations.AppendElements(vars);
+    }
     if (!mCGFont) {
       ::CFRetain(baseFont);
       mCGFont = baseFont;
@@ -551,6 +555,11 @@ already_AddRefed<ScaledFont> gfxMacFont::GetScaledFont(
       !mStyle.useGrayscaleAntialiasing, ApplySyntheticBold(), hasColorGlyphs);
   if (!newScaledFont) {
     return nullptr;
+  }
+  if (!mLegacyVariations.IsEmpty()) {
+    static_cast<ScaledFontMac*>(newScaledFont.get())
+        ->SetLegacyVariations(mLegacyVariations.Elements(),
+                              mLegacyVariations.Length());
   }
 
   InitializeScaledFont(newScaledFont);

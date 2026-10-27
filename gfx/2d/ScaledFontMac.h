@@ -15,6 +15,7 @@
 #include "2D.h"
 
 #include "ScaledFontBase.h"
+#include <vector>
 
 namespace mozilla {
 namespace gfx {
@@ -62,6 +63,14 @@ class ScaledFontMac : public ScaledFontBase {
 
   bool UseFontSmoothing() const { return mUseFontSmoothing; }
 
+  void SetLegacyVariations(const FontVariation* aVariations, uint32_t aCount) {
+    if (aCount) {
+      mLegacyVariations.assign(aVariations, aVariations + aCount);
+    } else {
+      mLegacyVariations.clear();
+    }
+  }
+
   cairo_font_face_t* CreateCairoFontFace(
       cairo_font_options_t* aFontOptions) override;
 
@@ -76,6 +85,7 @@ class ScaledFontMac : public ScaledFontBase {
   bool mUseFontSmoothing;
   bool mApplySyntheticBold;
   bool mHasColorGlyphs;
+  std::vector<FontVariation> mLegacyVariations;
 
   struct InstanceData {
     explicit InstanceData(ScaledFontMac* aScaledFont)

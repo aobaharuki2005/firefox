@@ -1,0 +1,36 @@
+{
+  "collected": "2026-10-18",
+  "font_family": "Noto Serif SC",
+  "font_version": "Version 2.003-H1;hotconv 1.1.1;makeotfexe 2.6.0",
+  "copyright_from_original_name_table": "(c) 2017-2024 Adobe (http://www.adobe.com/).",
+  "license": "SIL Open Font License 1.1",
+  "license_source_url": "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Serif/LICENSE",
+  "font_files": {
+    "actual-browser-luo.woff2": {
+      "source_url": "https://fonts.gstatic.com/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.116.woff2",
+      "kind": "Original downloaded variable font subset",
+      "bytes": 67252,
+      "sha256": "e062dfddc1d0364c84047fc25c1b4474693060ed7fb27fb7f52f55c675764715"
+    },
+    "instanced-200.woff2": {
+      "derived_from": "actual-browser-luo.woff2",
+      "operation": "FontTools instancing at wght=200, retaining overlaps",
+      "bytes": 33916,
+      "sha256": "5d0f2621507f3417009947d17b4514a7f826ecabfbcb99a80cf1a5d0dcbb40ff"
+    },
+    "seam-fixed-200.woff2": {
+      "derived_from": "instanced-200.woff2",
+      "operation": "Only the bottom rectangle of U+7EDC is trimmed from x=483..820 to x=508..793, y=-5..25 unchanged",
+      "bytes": 33956,
+      "sha256": "a85c86100a2f592215e7579b95002fbab1833a5f4db07a837bcec562cd560e96"
+    },
+    "google-static-200.woff2": {
+      "kind": "Google Fonts static weight 200 diagnostic subset",
+      "source_url": null,
+      "source_note": "Exact response URL was not retained in the original diagnostic files; preserving the original bytes and checksum.",
+      "bytes": 1400,
+      "sha256": "130acb3248d5678891cb7505aa88a87b9537a0ffe3ea2002cc1b29009e1331a0"
+    }
+  },
+  "probe_adjustments": "native_overlap_probe.py writes results under artifacts/legacy-fonts-native and creates the output directory only when run."
+}

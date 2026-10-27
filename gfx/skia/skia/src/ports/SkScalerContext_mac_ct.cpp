@@ -10,6 +10,9 @@
 
 #ifdef SK_BUILD_FOR_MAC
 #import <ApplicationServices/ApplicationServices.h>
+#ifdef MOZ_SKIA
+#include "mozilla/gfx/LegacyMacFont.h"
+#endif
 #endif
 
 #ifdef SK_BUILD_FOR_IOS
@@ -327,7 +330,14 @@ CGRGBPixel* SkScalerContext_Mac::Offscreen::getCG(const SkScalerContext_Mac& con
     // So always make the font transform identity and place the transform on the context.
     point = CGPointApplyAffineTransform(point, context.fInvTransform);
 
-    CTFontDrawGlyphs(context.fCTFont.get(), &glyphID, &point, 1, fCG.get());
+#if defined(MOZ_SKIA) && defined(SK_BUILD_FOR_MAC)
+    if (!momiji_legacy_outlines_enabled() ||
+        !momiji_legacy_draw_glyphs(context.fCTFont.get(), &glyphID, &point, 1,
+                                 fCG.get()))
+#endif
+    {
+        CTFontDrawGlyphs(context.fCTFont.get(), &glyphID, &point, 1, fCG.get());
+    }
 
     SkASSERT(rowBytesPtr);
     *rowBytesPtr = rowBytes;
@@ -707,7 +717,15 @@ SkScalerContext_Mac::generatePath(const SkGlyph& glyph) {
     }
 
     CGGlyph cgGlyph = SkTo<CGGlyph>(glyph.getGlyphID());
-    SkUniqueCFRef<CGPathRef> cgPath(CTFontCreatePathForGlyph(fCTFont.get(), cgGlyph, &xform));
+    CGPathRef rawPath = nullptr;
+#if defined(MOZ_SKIA) && defined(SK_BUILD_FOR_MAC)
+    if (momiji_legacy_outlines_enabled()) {
+        rawPath = momiji_legacy_create_glyph_path(fCTFont.get(), cgGlyph, &xform);
+    }
+#endif
+    SkUniqueCFRef<CGPathRef> cgPath(
+        rawPath ? rawPath
+                : CTFontCreatePathForGlyph(fCTFont.get(), cgGlyph, &xform));
 
     if (!cgPath) {
         return {};

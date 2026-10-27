@@ -30,6 +30,45 @@ use crate::rasterizer::{GlyphFormat, GlyphRasterError, GlyphRasterResult, Raster
 use crate::types::FastHashMap;
 use std::collections::hash_map::Entry;
 use std::sync::Arc;
+#[cfg(all(feature = "gecko", target_os = "macos"))]
+use foreign_types::ForeignType;
+
+#[cfg(all(feature = "gecko", target_os = "macos"))]
+extern "C" {
+    fn momiji_legacy_variations_enabled() -> bool;
+    fn momiji_legacy_outlines_enabled() -> bool;
+    fn momiji_legacy_create_font(
+        font: *mut core_graphics::sys::CGFont,
+        variations: *const FontVariation,
+        count: usize,
+    ) -> *mut core_graphics::sys::CGFont;
+    fn momiji_legacy_draw_glyphs(
+        font: CTFontRef,
+        glyphs: *const CGGlyph,
+        positions: *const CGPoint,
+        count: usize,
+        context: *mut std::ffi::c_void,
+    ) -> bool;
+}
+
+fn draw_glyph(ct_font: &CTFont, glyph: CGGlyph, origin: CGPoint, context: &CGContext) -> bool {
+    #[cfg(all(feature = "gecko", target_os = "macos"))]
+    unsafe {
+        if momiji_legacy_outlines_enabled()
+            && momiji_legacy_draw_glyphs(
+                ct_font.as_concrete_TypeRef(),
+                &glyph,
+                &origin,
+                1,
+                context.as_ptr() as *mut _,
+            )
+        {
+            return true;
+        }
+    }
+    ct_font.draw_glyphs(&[glyph], &[origin], context.clone());
+    false
+}
 
 const INITIAL_CG_CONTEXT_SIDE_LENGTH: u32 = 32;
 
@@ -214,6 +253,21 @@ extern "C" {
 }
 
 fn new_ct_font_with_variations(cg_font: &CGFont, size: f64, variations: &[FontVariation]) -> CTFont {
+    #[cfg(all(feature = "gecko", target_os = "macos"))]
+    unsafe {
+        if momiji_legacy_variations_enabled() {
+            let instance = momiji_legacy_create_font(
+                cg_font.as_ptr(),
+                variations.as_ptr(),
+                variations.len(),
+            );
+            if !instance.is_null() {
+                let instance = CGFont::from_ptr(instance);
+                return core_text::font::new_from_CGFont(&instance, size);
+            }
+            return core_text::font::new_from_CGFont(cg_font, size);
+        }
+    }
     unsafe {
         let ct_font = core_text::font::new_from_CGFont(cg_font, size);
     if variations.is_empty() {
@@ -736,6 +790,7 @@ impl FontContext {
             }
         };
 
+        let used_raw_outlines;
         {
             let cg_context = self.graphics_context.get_context(&raster_size, glyph_type);
 
@@ -797,7 +852,7 @@ impl FontContext {
                 cg_context.set_text_matrix(&CG_AFFINE_TRANSFORM_IDENTITY);
             }
 
-            ct_font.draw_glyphs(&[glyph], &[draw_origin], cg_context.clone());
+            used_raw_outlines = draw_glyph(&ct_font, glyph, draw_origin, cg_context);
 
             // We'd like to render all the strikes in a single ct_font.draw_glyphs call,
             // passing an array of glyph IDs and an array of origins, but unfortunately
@@ -810,7 +865,7 @@ impl FontContext {
                     x: draw_origin.x + i as f64 * pixel_step,
                     y: draw_origin.y,
                 };
-                ct_font.draw_glyphs(&[glyph], &[origin], cg_context.clone());
+                draw_glyph(&ct_font, glyph, origin, cg_context);
             }
         }
 
@@ -823,7 +878,7 @@ impl FontContext {
             // allowed to write to the alpha channel, because we're done calling
             // CG functions now.
 
-            if smooth {
+            if smooth && !used_raw_outlines {
                 // Convert to linear space for subpixel AA.
                 // We explicitly do not do this for grayscale AA ("Alpha without
                 // smoothing" or Mono) because those rendering modes are not
@@ -849,7 +904,7 @@ impl FontContext {
                 pixel[3] = pixel[1];
             }
 
-            if smooth {
+            if smooth && !used_raw_outlines {
                 // Convert back from linear space into device space, and perform
                 // some "preblending" based on the text color.
                 // In Alpha + smoothing mode, this will also convert subpixel AA
@@ -873,6 +928,7 @@ impl FontContext {
             },
             format: match glyph_type {
                 GlyphType::Bitmap => GlyphFormat::ColorBitmap,
+                GlyphType::Vector if used_raw_outlines => GlyphFormat::Alpha,
                 GlyphType::Vector => font.get_glyph_format(),
             },
             bytes: rasterized_pixels,

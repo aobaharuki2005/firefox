@@ -7714,6 +7714,17 @@
   mirror: always
 
 #if defined(XP_DARWIN)
+  # Restart required: font instances and glyph caches retain these choices.
+-   name: gfx.font_rendering.legacy_macos.variations
+    type: bool
+    value: false
+    mirror: once
+
+-   name: gfx.font_rendering.legacy_macos.outlines
+    type: bool
+    value: false
+    mirror: once
+
   # Set to true to revert from HarfBuzz AAT shaping to the old Core Text
   # backend.
 -   name: gfx.font_rendering.coretext.enabled
