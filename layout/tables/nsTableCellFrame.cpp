@@ -69,8 +69,7 @@ void nsTableCellFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
   if (aPrevInFlow) {
     // Set the column index
     nsTableCellFrame* cellFrame = (nsTableCellFrame*)aPrevInFlow;
-    uint32_t colIndex = cellFrame->ColIndex();
-    SetColIndex(colIndex);
+    mColIndex = cellFrame->mColIndex;
   } else {
     // Although the spec doesn't say that writing-mode is not applied to
     // table-cells, we still override style value here because we want to
@@ -210,7 +209,10 @@ void nsTableCellFrame::DidSetComputedStyle(ComputedStyle* aOldComputedStyle) {
     uint32_t rowIndex = RowIndex();
     // row span needs to be clamped as we do not create rows in the cellmap
     // which do not have cells originating in them
-    TableArea damageArea(colIndex, rowIndex, GetColSpan(),
+    // col span needs to be clamped as the cellmap may not reflect it yet
+    TableArea damageArea(colIndex, rowIndex,
+                         std::min(static_cast<uint32_t>(GetColSpan()),
+                                  tableFrame->GetColCount() - colIndex),
                          std::min(static_cast<uint32_t>(GetRowSpan()),
                                   tableFrame->GetRowCount() - rowIndex));
     tableFrame->AddBCDamageArea(damageArea);
@@ -234,7 +236,17 @@ void nsTableCellFrame::RemoveFrame(DestroyContext&, ChildListID, nsIFrame*) {
 }
 #endif
 
-void nsTableCellFrame::SetColIndex(int32_t aColIndex) { mColIndex = aColIndex; }
+void nsTableCellFrame::SetColIndex(int32_t aColIndex) {
+  MOZ_ASSERT(!GetPrevContinuation());
+  mColIndex = aColIndex;
+  // Keep our continuations in sync. Cells can be reindexed dynamically (e.g.
+  // when rows are removed), and all continuations should agree on the column
+  // index.
+  for (nsIFrame* cont = GetNextContinuation(); cont;
+       cont = cont->GetNextContinuation()) {
+    static_cast<nsTableCellFrame*>(cont)->mColIndex = aColIndex;
+  }
+}
 
 /* virtual */
 nsMargin nsTableCellFrame::GetUsedMargin() const {

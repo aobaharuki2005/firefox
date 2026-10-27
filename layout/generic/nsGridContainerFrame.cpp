@@ -5755,21 +5755,20 @@ static nscoord MeasuringReflow(nsIFrame* aChild,
       nsIFrame::ReflowChildFlags::NoMoveFrame |
       nsIFrame::ReflowChildFlags::NoDeleteNextInFlowChild;
 
-  // Reflowing the child might invalidate the cache, so we declare the variable
-  // inside the if-statement to ensure it isn't accessed after it may have
-  // become invalid.
-  if (const GridItemCachedBAxisMeasurement* cachedMeasurement =
+  // NOTE: Reflowing or FinishReflowChild might invalidate the cache.
+  if (const auto* cachedMeasurement =
           aChild->GetProperty(GridItemCachedBAxisMeasurement::Prop());
       cachedMeasurement && cachedMeasurement->IsValidFor(aChild, aCBSize)) {
-    childSize.BSize(wm) = cachedMeasurement->BSize();
+    const nscoord cachedBSize = cachedMeasurement->BSize();
+    childSize.BSize(wm) = cachedBSize;
     childSize.ISize(wm) = aChild->ISize(wm);
     nsContainerFrame::FinishReflowChild(aChild, pc, childSize, &childRI, wm,
                                         LogicalPoint(wm), nsSize(), flags);
     GRID_LOG(
         "[perf] MeasuringReflow accepted cached value=%d, child=%p, "
         "aCBSize.ISize=%d",
-        cachedMeasurement->BSize(), aChild, aCBSize.ISize(wm));
-    return cachedMeasurement->BSize();
+        cachedBSize, aChild, aCBSize.ISize(wm));
+    return cachedBSize;
   }
 
   parent->ReflowChild(aChild, pc, childSize, childRI, wm, LogicalPoint(wm),
@@ -9263,7 +9262,7 @@ nscoord nsGridContainerFrame::ReflowChildren(GridReflowInput& aGridRI,
   nscoord bSize = aContentArea.BSize(wm);
   MOZ_ASSERT(aGridRI.mReflowInput);
   MOZ_ASSERT(aStatus.IsEmpty(), "Caller should pass a fresh reflow status!");
-  if (HidesContentForLayout()) {
+  if (HidesContentForLayout() && !GetNextContinuation()) {
     return bSize;
   }
 
@@ -9427,7 +9426,8 @@ void nsGridContainerFrame::Reflow(nsPresContext* aPresContext,
                                   nsReflowStatus& aStatus) {
   NormalizeChildLists();
 
-  if (IsHiddenByContentVisibilityOfInFlowParentForLayout()) {
+  if (IsHiddenByContentVisibilityOfInFlowParentForLayout() &&
+      !GetNextContinuation()) {
     return;
   }
 

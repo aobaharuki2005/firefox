@@ -666,6 +666,10 @@ fn prepare_quad_impl(
         transfomed_aa_edges
     };
 
+    let local_clip_rect = local_clip_rect
+        .intersection_unchecked(local_rect)
+        .intersection_unchecked(&clip_chain.local_clip_rect);
+
     // We round the coordinates of non-antialiased edges of the primitive.
     // This allows us to ensure that indirect axis-aligned primitives cover the render
     // task exactly. Since we do this for indirect primitives, we have to also do it for
@@ -679,7 +683,7 @@ fn prepare_quad_impl(
 
         let quad = create_quad_primitive(
             local_rect,
-            local_clip_rect,
+            &local_clip_rect,
             &DeviceRect::max_rect(),
             transform.as_2d_scale_offset(),
             round_edges,
@@ -737,9 +741,18 @@ fn prepare_quad_impl(
     let mut clipped_surface_rect = (clipped_raster_rect * device_scale).round();
 
     if let Some(t) = transform.as_2d_scale_offset() {
-        let clipped_local_rect = local_rect.intersection_unchecked(local_clip_rect);
+        let clipped_local_rect = local_rect.intersection_unchecked(&local_clip_rect);
+        let prim_surface_rect = t.map_rect(&clipped_local_rect);
+        // Snap the rectangle to the pixel grid...
+        let prim_surface_rect = round_edges.select(
+            // ... to the nearest pixel for non-antialiased edges.
+            prim_surface_rect.round(),
+            // ... conservatively for antialiased edges so that the AA
+            // is included.
+            prim_surface_rect.round_out()
+        );
         clipped_surface_rect = clipped_surface_rect.intersection_unchecked(
-            &t.map_rect(&clipped_local_rect).round_out(),
+            &prim_surface_rect,
         );
     }
 
@@ -755,7 +768,7 @@ fn prepare_quad_impl(
                 transform.prim_spatial_node_index(),
                 transform.raster_spatial_node_index(),
                 local_rect,
-                local_clip_rect,
+                &local_clip_rect,
                 &clipped_surface_rect,
                 transform.as_2d_scale_offset(),
                 transform.device_pixel_scale(),
@@ -785,7 +798,7 @@ fn prepare_quad_impl(
             prepare_tiles(
                 prim_instance_index,
                 local_rect,
-                local_clip_rect,
+                &local_clip_rect,
                 &clipped_surface_rect,
                 pattern,
                 quad_flags,
@@ -805,7 +818,7 @@ fn prepare_quad_impl(
             prepare_nine_patch(
                 prim_instance_index,
                 local_rect,
-                local_clip_rect,
+                &local_clip_rect,
                 &clipped_surface_rect,
                 &clip_rect,
                 radius,
@@ -885,16 +898,17 @@ fn prepare_indirect_pattern(
 
     let needs_scissor = local_to_device_scale_offset.is_none();
 
-    let mut local_coverage_rect = *local_rect;
+    let mut pattern_rect = *local_rect;
     let mut clips_range = ClipNodeRange { first: 0, count: 0 };
     if let Some(clip_chain) = clip_chain {
-        local_coverage_rect = local_coverage_rect.intersection_unchecked(local_clip_rect);
+        // TODO: intersecting the pattern rect with the clip is incorrect.
+        pattern_rect = pattern_rect.intersection_unchecked(local_clip_rect);
         clips_range = clip_chain.clips_range;
     }
 
     Some(add_render_task_with_mask(
         &pattern,
-        &local_coverage_rect,
+        &pattern_rect,
         task_size,
         clipped_surface_rect.min,
         clips_range,
@@ -1315,7 +1329,7 @@ fn prepare_tiles(
     }
 
     if !scratch.frame.quad_direct_segments.is_empty() {
-        // Nine-patch segments are only allowed for axis-aligned primitives.
+        // Tile segments are only allowed for axis-aligned primitives.
         let local_to_device = transform.as_2d_scale_offset().unwrap();
 
         let device_prim_rect: DeviceRect = local_to_device.map_rect(&local_rect);

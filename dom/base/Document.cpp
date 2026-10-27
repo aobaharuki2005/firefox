@@ -2486,9 +2486,7 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(Document)
 
   DocumentOrShadowRoot::Traverse(tmp, cb);
 
-  if (tmp->mRadioGroupContainer) {
-    RadioGroupContainer::Traverse(tmp->mRadioGroupContainer.get(), cb);
-  }
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mRadioGroupContainer)
 
   for (auto& sheets : tmp->mAdditionalSheets) {
     tmp->TraverseStyleSheets(sheets, "mAdditionalSheets[<origin>][i]", cb);
@@ -2696,7 +2694,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(Document)
 
   DocumentOrShadowRoot::Unlink(tmp);
 
-  tmp->mRadioGroupContainer = nullptr;
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mRadioGroupContainer)
 
   // Document has a pretty complex destructor, so we're going to
   // assume that *most* cycles you actually want to break somewhere
@@ -11556,15 +11554,15 @@ void Document::FlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
 
   RefPtr<Document> documentOnStack = this;
 
-  // We need to flush the sink for non-HTML documents (because the XML
-  // parser still does insertion with deferred notifications).  We
-  // also need to flush the sink if this is a layout-related flush, to
-  // make sure that layout is started as needed.  But we can skip that
-  // part if we have no presshell or if it's already done an initial
-  // reflow.
-  if ((!IsHTMLDocument() || (flushType > FlushType::ContentAndNotify &&
-                             mPresShell && !mPresShell->DidInitialize())) &&
-      (mParser || mWeakSink)) {
+  if (flushType < FlushType::Style) {
+    // Nothing to do here
+    return;
+  }
+
+  // We need to flush the sink if this is a layout-related flush, to make sure
+  // that layout is started as needed.  But we can skip that part if we have no
+  // presshell or if it's already done an initial reflow.
+  if (mPresShell && !mPresShell->DidInitialize() && (mParser || mWeakSink)) {
     nsCOMPtr<nsIContentSink> sink;
     if (mParser) {
       sink = mParser->GetContentSink();
@@ -11576,17 +11574,12 @@ void Document::FlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
     }
     // Determine if it is safe to flush the sink notifications
     // by determining if it safe to flush all the presshells.
-    if (sink && (flushType == FlushType::Content || IsSafeToFlush())) {
+    if (sink && IsSafeToFlush()) {
       sink->FlushPendingNotifications(flushType);
     }
   }
 
   // Should we be flushing pending binding constructors in here?
-
-  if (flushType <= FlushType::ContentAndNotify) {
-    // Nothing to do here
-    return;
-  }
 
   // If we have a parent we must flush the parent too to ensure that our
   // container is reflowed if its size was changed.
@@ -11934,7 +11927,7 @@ void Document::Sanitize() {
 
   nsAutoString value;
 
-  uint32_t length = nodes->Length(true);
+  uint32_t length = nodes->Length();
   for (uint32_t i = 0; i < length; ++i) {
     NS_ASSERTION(nodes->Item(i), "null item in node list!");
 
@@ -11951,7 +11944,7 @@ void Document::Sanitize() {
   // Now locate all _form_ elements that have autocomplete=off and reset them
   nodes = GetElementsByTagName(u"form"_ns);
 
-  length = nodes->Length(true);
+  length = nodes->Length();
   for (uint32_t i = 0; i < length; ++i) {
     // Reset() may change the list dynamically.
     RefPtr<HTMLFormElement> form =
@@ -12553,9 +12546,9 @@ void Document::OnPageShow(bool aPersisted, EventTarget* aDispatchStartTarget,
     RefPtr<ContentList> links =
         NS_GetContentList(root, kNameSpaceID_XHTML, u"link"_ns);
 
-    uint32_t linkCount = links->Length(true);
+    uint32_t linkCount = links->Length();
     for (uint32_t i = 0; i < linkCount; ++i) {
-      static_cast<HTMLLinkElement*>(links->Item(i, false))->LinkAdded();
+      static_cast<HTMLLinkElement*>(links->Item(i))->LinkAdded();
     }
   }
 
@@ -14870,12 +14863,7 @@ already_AddRefed<nsRange> Document::CaretRangeFromPoint(int32_t aX,
   return range.forget();
 }
 
-bool Document::IsPotentiallyScrollableImpl(HTMLBodyElement* aBody,
-                                           Flush aFlush) {
-  if (aFlush == Flush::Yes) {
-    FlushPendingNotifications(FlushType::Frames);
-  }
-
+bool Document::IsPotentiallyScrollableImpl(HTMLBodyElement* aBody) {
   // An element that is the HTML body element is potentially scrollable if all
   // of the following conditions are true:
 
@@ -14904,15 +14892,21 @@ Element* Document::GetScrollingElementImpl(Flush aFlush) {
   if (GetCompatibilityMode() != eCompatibility_NavQuirks) {
     return GetRootElement();
   }
+
+  if (aFlush == Flush::Yes) {
+    FlushPendingNotifications(FlushType::Frames);
+  }
+  // Get the body element after we flush to make sure it is up-to-date.
   RefPtr<HTMLBodyElement> body = GetBodyElement();
-  if (body && !IsPotentiallyScrollableImpl(body, aFlush)) {
+  if (body && !IsPotentiallyScrollableImpl(body)) {
     return body;
   }
   return nullptr;
 }
 
 bool Document::IsPotentiallyScrollable(HTMLBodyElement* aBody) {
-  return IsPotentiallyScrollableImpl(aBody, Flush::Yes);
+  FlushPendingNotifications(FlushType::Frames);
+  return IsPotentiallyScrollableImpl(aBody);
 }
 
 Element* Document::GetScrollingElement() {
@@ -15782,7 +15776,7 @@ void Document::RestorePreviousFullscreenState(UniquePtr<FullscreenExit> aExit) {
   }
 
   nsCOMPtr<Document> fullScreenDoc = GetFullscreenLeaf(this);
-  AutoTArray<Element*, 8> exitElements;
+  AutoTArray<RefPtr<Element>, 8> exitElements;
 
   Document* doc = fullScreenDoc;
   // Collect all subdocuments.
@@ -15825,8 +15819,6 @@ void Document::RestorePreviousFullscreenState(UniquePtr<FullscreenExit> aExit) {
     return;
   }
 
-  // If fullscreen mode is updated the pointer should be unlocked
-  PointerLockManager::Unlock("Document::RestorePreviousFullscreenState");
   // All documents listed in the array except the last one are going to
   // completely exit from the fullscreen state.
   for (auto i : IntegerRange(exitElements.Length() - 1)) {
@@ -15848,7 +15840,13 @@ void Document::RestorePreviousFullscreenState(UniquePtr<FullscreenExit> aExit) {
   // that the loop order is reversed so that events are dispatched in
   // the tree order as indicated in the spec.
   for (Element* e : Reversed(exitElements)) {
-    DispatchFullscreenChange(*e->OwnerDoc(), e);
+    Document* exitDoc = e->OwnerDoc();
+    DispatchFullscreenChange(*exitDoc, e);
+    if (!exitDoc->Fullscreen()) {
+      // The document may have other fullscreen subdocuments which are not part
+      // of the current fullscreen document chain, reset them as well.
+      exitDoc->EnumerateSubDocuments(ResetFullscreen);
+    }
   }
   aExit->MayResolvePromise();
 
@@ -15864,6 +15862,9 @@ void Document::RestorePreviousFullscreenState(UniquePtr<FullscreenExit> aExit) {
     // the warning UI.
     DispatchFullscreenNewOriginEvent(newFullscreenDoc);
   }
+
+  // If fullscreen mode is updated the pointer should be unlocked
+  PointerLockManager::Unlock("Document::RestorePreviousFullscreenState");
 }
 
 static void UpdateViewportScrollbarOverrideForFullscreen(Document* aDoc) {
@@ -21043,7 +21044,7 @@ FragmentDirective* Document::FragmentDirective() {
 
 RadioGroupContainer& Document::OwnedRadioGroupContainer() {
   if (!mRadioGroupContainer) {
-    mRadioGroupContainer = MakeUnique<RadioGroupContainer>();
+    mRadioGroupContainer = MakeRefPtr<RadioGroupContainer>();
   }
   return *mRadioGroupContainer;
 }

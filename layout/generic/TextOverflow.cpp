@@ -215,9 +215,9 @@ void nsDisplayTextOverflowMarker::PaintTextToContext(gfxContext* aCtx,
 
   if (mTextRun) {
     gfx::Point gfxPt(pt.x, pt.y);
-    auto& paletteCache = mFrame->PresContext()->FontPaletteCache();
+    auto* paletteValueSet = mFrame->PresContext()->GetFontPaletteValueSet();
     mTextRun->Draw(gfxTextRun::Range(mTextRun), gfxPt,
-                   gfxTextRun::DrawParams(aCtx, paletteCache));
+                   gfxTextRun::DrawParams(aCtx, paletteValueSet));
     return;
   }
 
@@ -829,10 +829,10 @@ bool TextOverflow::CanHaveOverflowMarkers(nsBlockFrame* aBlockFrame,
 
   // Make text-overflow: ellipsis work on the <input> editor.
   if (aBlockFrame->Style()->GetPseudoType() ==
-      PseudoStyleType::MozTextControlEditingRoot) {
+          PseudoStyleType::MozTextControlEditingRoot &&
+      MOZ_LIKELY(IsTextInputScrolledContent(aBlockFrame->GetParent()))) {
     MOZ_ASSERT(IsInlineAxisOverflowVisible(*aBlockFrame),
                "The control editing root must create overflow");
-    MOZ_DIAGNOSTIC_ASSERT(IsTextInputScrolledContent(aBlockFrame->GetParent()));
     auto* scc = static_cast<ScrollContainerFrame*>(
         aBlockFrame->GetParent()->GetParent());
     if (scc->GetScrollPosition() != nsPoint()) {

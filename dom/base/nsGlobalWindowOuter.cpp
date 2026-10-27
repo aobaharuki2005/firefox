@@ -2237,14 +2237,19 @@ nsresult nsGlobalWindowOuter::SetNewDocument(Document* aDocument,
     // currentInner->RefreshRealmPrincipals() here because we haven't yet set
     // its mDoc to aDocument.
     JS::Realm* realm = js::GetNonCCWObjectRealm(newInnerGlobal);
+    nsJSPrincipals* existing =
+        nsJSPrincipals::get(JS::GetRealmPrincipals(realm));
+    nsJSPrincipals* jsPrincipals =
+        nsJSPrincipals::get(aDocument->NodePrincipal());
+    if (existing != jsPrincipals) {
+      newInnerWindow->HoldOldPrincipal(existing);
+    }
 #ifdef DEBUG
     bool sameOrigin = false;
-    nsIPrincipal* existing = nsJSPrincipals::get(JS::GetRealmPrincipals(realm));
     aDocument->NodePrincipal()->Equals(existing, &sameOrigin);
     MOZ_ASSERT(sameOrigin);
 #endif
-    JS::SetRealmPrincipals(realm,
-                           nsJSPrincipals::get(aDocument->NodePrincipal()));
+    JS::SetRealmPrincipals(realm, jsPrincipals);
   } else {
     if (aState) {
       newInnerWindow = wsh->GetInnerWindow();
@@ -2837,6 +2842,10 @@ bool nsGlobalWindowOuter::AreDialogsEnabled() {
   if (mDocShell) {
     nsCOMPtr<nsIDocumentViewer> viewer;
     mDocShell->GetDocViewer(getter_AddRefs(viewer));
+
+    if (!viewer) {
+      return false;
+    }
 
     bool isHidden;
     viewer->GetIsHidden(&isHidden);
@@ -5695,8 +5704,6 @@ Nullable<WindowProxyHolder> nsGlobalWindowOuter::OpenDialogOuter(
 }
 
 WindowProxyHolder nsGlobalWindowOuter::GetFramesOuter() {
-  RefPtr<nsPIDOMWindowOuter> frames(this);
-  FlushPendingNotifications(FlushType::ContentAndNotify);
   return WindowProxyHolder(mBrowsingContext);
 }
 

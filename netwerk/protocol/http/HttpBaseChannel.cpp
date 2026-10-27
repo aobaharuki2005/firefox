@@ -4160,16 +4160,6 @@ HttpBaseChannel::SetTlsFlags(uint32_t aTlsFlags) {
 }
 
 NS_IMETHODIMP
-HttpBaseChannel::GetApiRedirectToURI(nsIURI** aResult) {
-  if (!mAPIRedirectTo) {
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-  NS_ENSURE_ARG_POINTER(aResult);
-  *aResult = do_AddRef(mAPIRedirectTo->first()).take();
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 HttpBaseChannel::GetResponseTimeoutEnabled(bool* aEnable) {
   if (NS_WARN_IF(!aEnable)) {
     return NS_ERROR_NULL_POINTER;
@@ -4466,6 +4456,27 @@ void HttpBaseChannel::ClearConsoleReports() {
 
 bool HttpBaseChannel::IsNavigation() {
   return LoadForceMainDocumentChannel() || (mLoadFlags & LOAD_DOCUMENT_URI);
+}
+
+nsIPrincipal* HttpBaseChannel::GetAltDataBindingPrincipal() {
+  if (!mLoadInfo) {
+    return nullptr;
+  }
+
+  nsIPrincipal* principal = mLoadInfo->GetLoadingPrincipal();
+  if (!principal) {
+    principal = mLoadInfo->TriggeringPrincipal();
+  }
+  return principal;
+}
+
+nsresult HttpBaseChannel::GetAltDataBindingOrigin(nsACString& aOrigin) {
+  aOrigin.Truncate();
+  nsIPrincipal* principal = GetAltDataBindingPrincipal();
+  if (!principal) {
+    return NS_ERROR_FAILURE;
+  }
+  return principal->GetOrigin(aOrigin);
 }
 
 bool HttpBaseChannel::BypassServiceWorker() const {

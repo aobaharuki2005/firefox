@@ -45,6 +45,8 @@ support-files = [
 https_first_disabled = true
 support-files = ["dummy_iframe_page.html"]
 
+["browser_identityBlock_drag.js"]
+
 ["browser_identityBlock_flicker.js"]
 
 ["browser_identityBlock_focus.js"]
@@ -128,9 +130,6 @@ support-files = [
 
 ["browser_mixed_content_cert_override.js"]
 tags = "mcb"
-skip-if = [
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1997430
-]
 
 support-files = ["test-mixedcontent-securityerrors.html"]
 

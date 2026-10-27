@@ -5060,10 +5060,8 @@ fn parse_property_into(
 ) -> Result<(), ()> {
     let value = unsafe { value.as_str_unchecked() };
 
-    if let Some(non_custom) = property_id.non_custom_id() {
-        if !non_custom.allowed_in_rule(rule_type.into()) {
-            return Err(());
-        }
+    if !property_id.allowed_in_rule(rule_type.into()) {
+        return Err(());
     }
 
     parse_one_declaration_into(
@@ -5209,6 +5207,7 @@ pub extern "C" fn Servo_ParseAndComputeViewTimelineInset(
         &data,
         &style,
         parent_style,
+        /* for_smil_animation = */ false,
         &mut conditions,
         container_size_query,
         &element,
@@ -7301,6 +7300,7 @@ fn create_context_for_animation<'a>(
     per_doc_data: &'a PerDocumentStyleDataImpl,
     style: &'a ComputedValues,
     parent_style: Option<&'a ComputedValues>,
+    for_smil_animation: bool,
     rule_cache_conditions: &'a mut RuleCacheConditions,
     container_size_query: ContainerSizeQuery<'a>,
     element_context: &'a dyn ElementContext,
@@ -7313,6 +7313,7 @@ fn create_context_for_animation<'a>(
             style,
             parent_style,
         ),
+        for_smil_animation,
         per_doc_data.stylist.quirks_mode(),
         rule_cache_conditions,
         container_size_query,
@@ -7408,6 +7409,7 @@ pub extern "C" fn Servo_GetComputedKeyframeValues(
         &data,
         &style,
         parent_style,
+        /* for_smil_animation = */ false,
         &mut conditions,
         container_size_query,
         &element,
@@ -7548,6 +7550,7 @@ pub extern "C" fn Servo_GetAnimationValues(
         &data,
         &style,
         parent_style,
+        /* for_smil_animation = */ true,
         &mut conditions,
         container_size_query,
         &element,
@@ -7596,6 +7599,7 @@ pub extern "C" fn Servo_AnimationValue_Compute(
         &data,
         style,
         parent_style,
+        /* for_smil_animation = */ false,
         &mut conditions,
         container_size_query,
         &element,
@@ -11499,6 +11503,7 @@ pub unsafe extern "C" fn Servo_GetComputationSteps(
         &data,
         &style,
         parent_style,
+        /* for_smil_animation = */ false,
         &mut conditions,
         container_size_query,
         &element,

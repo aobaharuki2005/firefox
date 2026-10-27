@@ -4359,8 +4359,13 @@ mozilla::ipc::IPCResult ContentParent::RecvConstructPopupBrowser(
   MaybeInvalidTabContext tc(aContext);
   MOZ_ASSERT(tc.IsValid());
 
+  // Construct from the fields derived here; the fields the content process
+  // sent are reconciled in InitFromContentProcess.
+  WindowGlobalInit derivedWindowInit(aInitialWindowInit);
+  derivedWindowInit.context().mFields =
+      WindowGlobalActor::ComputeInitialFields(browsingContext);
   RefPtr<WindowGlobalParent> initialWindow =
-      WindowGlobalParent::CreateDisconnected(aInitialWindowInit, this);
+      WindowGlobalParent::CreateDisconnected(derivedWindowInit, this);
   if (!initialWindow) {
     return IPC_FAIL(this, "Failed to create WindowGlobalParent");
   }
@@ -4389,7 +4394,8 @@ mozilla::ipc::IPCResult ContentParent::RecvConstructPopupBrowser(
 
   browsingContext->SetCurrentBrowserParent(parent);
 
-  initialWindow->Init();
+  initialWindow->InitFromContentProcess(aInitialWindowInit.context().mFields,
+                                        this);
 
   // When enabling input event prioritization, input events may preempt other
   // normal priority IPC messages. To prevent the input events preempt
@@ -6889,10 +6895,10 @@ mozilla::ipc::IPCResult ContentParent::RecvAddOrRemovePageAwakeRequest(
 
 #if defined(XP_WIN)
 mozilla::ipc::IPCResult ContentParent::RecvGetModulesTrust(
-    ModulePaths&& aModPaths, bool aRunAtNormalPriority,
+    ModuleIdentifiers&& aModIdents, bool aRunAtNormalPriority,
     GetModulesTrustResolver&& aResolver) {
   RefPtr<DllServices> dllSvc(DllServices::Get());
-  dllSvc->GetModulesTrust(std::move(aModPaths), aRunAtNormalPriority)
+  dllSvc->GetModulesTrust(std::move(aModIdents), aRunAtNormalPriority)
       ->Then(
           GetMainThreadSerialEventTarget(), __func__,
           [aResolver](ModulesMapResult&& aResult) {
@@ -7318,8 +7324,12 @@ mozilla::ipc::IPCResult ContentParent::RecvBlurToParent(
       !aBrowsingContextToClear.IsNullOrDiscarded() &&
       (focusedBrowsingContext->OwnerProcessId() !=
        aBrowsingContextToClear.get_canonical()->OwnerProcessId())) {
-    MOZ_RELEASE_ASSERT(!ancestorDifferent,
-                       "This combination is not supposed to happen.");
+    if (ancestorDifferent) {
+      return IPC_FAIL(this,
+                      "RecvBlurToParent: browsingContextToClear and "
+                      "ancestorBrowsingContextToFocus can't both be in a "
+                      "different process than focusedBrowsingContext.");
+    }
     if (ContentParent* cp =
             aBrowsingContextToClear.get_canonical()->GetContentParent()) {
       (void)cp->SendSetFocusedElement(aBrowsingContextToClear, false);
@@ -7464,6 +7474,18 @@ void ContentParent::RemoveBrowsingContextGroup(BrowsingContextGroup* aGroup) {
     // to clean up the group.
     (void)SendDestroyBrowsingContextGroup(aGroup->Id());
   }
+}
+
+CanonicalBrowsingContext* ContentParent::GetBrowsingContextIfCurrent(
+    const MaybeDiscardedWindowContext& aContext) {
+  if (aContext.IsNullOrDiscarded()) {
+    return nullptr;
+  } else if (aContext->Canonical()->GetContentParent() != this) {
+    return nullptr;
+  } else if (!aContext->IsCurrent()) {
+    return nullptr;
+  }
+  return aContext->Canonical()->GetBrowsingContext();
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvCommitBrowsingContextTransaction(
@@ -7811,28 +7833,44 @@ mozilla::ipc::IPCResult ContentParent::RecvRemoveFromBFCache(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvSetActiveSessionHistoryEntry(
-    const MaybeDiscarded<BrowsingContext>& aContext,
+    const MaybeDiscarded<WindowContext>& aContext,
     const Maybe<nsPoint>& aPreviousScrollPos, SessionHistoryInfo&& aInfo,
-    uint32_t aLoadType, uint32_t aUpdatedCacheKey, const nsID& aChangeID) {
+    uint32_t aLoadType, uint32_t aUpdatedCacheKey, const nsID& aChangeID,
+    const Maybe<NewSessionHistorySharedState>& aNewSharedState) {
   if (aInfo.GetOriginalURI() || aInfo.GetResultPrincipalURI()) {
     return IPC_FAIL(this, "Should not be set by content");
   }
-  if (!aContext.IsNullOrDiscarded()) {
-    aContext.get_canonical()->SetActiveSessionHistoryEntry(
-        aPreviousScrollPos, &aInfo, aLoadType, aUpdatedCacheKey, aChangeID);
+
+  CanonicalBrowsingContext* cbc = GetBrowsingContextIfCurrent(aContext);
+  bool createsSharedState = false;
+  if (!cbc ||
+      (aNewSharedState && !cbc->CreateSharedState(&aInfo, *aNewSharedState,
+                                                  &createsSharedState)) ||
+      !cbc->ValidateSessionHistoryInfo(&aInfo)) {
+    return IPC_OK();
   }
+  cbc->SetActiveSessionHistoryEntry(aPreviousScrollPos, &aInfo, aLoadType,
+                                    aUpdatedCacheKey, aChangeID,
+                                    createsSharedState);
+  cbc->InheritDocumentPrincipalIfNeeded();
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvReplaceActiveSessionHistoryEntry(
-    const MaybeDiscarded<BrowsingContext>& aContext,
-    SessionHistoryInfo&& aInfo) {
+    const MaybeDiscarded<WindowContext>& aContext, SessionHistoryInfo&& aInfo,
+    const Maybe<NewSessionHistorySharedState>& aNewSharedState) {
   if (aInfo.GetOriginalURI() || aInfo.GetResultPrincipalURI()) {
     return IPC_FAIL(this, "Should not be set by content");
   }
-  if (!aContext.IsNullOrDiscarded()) {
-    aContext.get_canonical()->ReplaceActiveSessionHistoryEntry(&aInfo);
+
+  CanonicalBrowsingContext* cbc = GetBrowsingContextIfCurrent(aContext);
+  if (!cbc || !cbc->GetActiveSessionHistoryEntry() ||
+      (aNewSharedState && !cbc->CreateSharedState(&aInfo, *aNewSharedState)) ||
+      !cbc->ValidateSessionHistoryInfo(&aInfo)) {
+    return IPC_OK();
   }
+  cbc->ReplaceActiveSessionHistoryEntry(&aInfo);
+  cbc->InheritDocumentPrincipalIfNeeded();
   return IPC_OK();
 }
 

@@ -1192,6 +1192,7 @@ export var Policies = {
     onBeforeUIStartup(manager, param) {
       if (param) {
         manager.disallowFeature("passwordReveal");
+        setAndLockPref("layout.forms.reveal-password-button.enabled", false);
       }
     },
   },
@@ -2507,16 +2508,16 @@ export var Policies = {
 
   PictureInPicture: {
     onBeforeAddons(manager, param) {
-      if ("Enabled" in param) {
-        PoliciesUtils.setDefaultPref(
-          "media.videocontrols.picture-in-picture.video-toggle.enabled",
-          param.Enabled
-        );
-      }
-      if (param.Locked) {
-        Services.prefs.lockPref(
-          "media.videocontrols.picture-in-picture.video-toggle.enabled"
-        );
+      for (const pref of [
+        "media.videocontrols.picture-in-picture.enabled",
+        "media.videocontrols.picture-in-picture.video-toggle.enabled",
+      ]) {
+        if ("Enabled" in param) {
+          PoliciesUtils.setDefaultPref(pref, param.Enabled);
+        }
+        if (param.Locked) {
+          Services.prefs.lockPref(pref);
+        }
       }
     },
   },

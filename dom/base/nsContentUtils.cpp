@@ -4303,7 +4303,7 @@ void nsContentUtils::GenerateStateKey(nsIContent* aContent, Document* aDocument,
           appendedForm = true;
         } else {
           KeyAppendString("fn"_ns, aKey);
-          int32_t index = htmlForms->IndexOf(formElement, false);
+          int32_t index = htmlForms->IndexOf(formElement);
           if (index <= -1) {
             //
             // XXX HACK this uses some state that was dumped into the document
@@ -4345,7 +4345,7 @@ void nsContentUtils::GenerateStateKey(nsIContent* aContent, Document* aDocument,
           generatedUniqueKey = true;
         } else {
           KeyAppendString("dn"_ns, aKey);
-          int32_t index = htmlFormControls->IndexOf(aContent, true);
+          int32_t index = htmlFormControls->IndexOf(aContent);
           if (index > -1) {
             KeyAppendInt(index, aKey);
             generatedUniqueKey = true;
@@ -12296,6 +12296,12 @@ uint64_t nsContentUtils::GenerateProcessSpecificId(uint64_t aId) {
 std::tuple<uint64_t, uint64_t> nsContentUtils::SplitProcessSpecificId(
     uint64_t aId) {
   return {aId >> kIdBits, aId & ((uint64_t(1) << kIdBits) - 1)};
+}
+
+/* static */
+bool nsContentUtils::IsProcessSpecificIdFrom(uint64_t aId,
+                                             GeckoChildID aChildID) {
+  return (aId >> kIdBits) == static_cast<uint64_t>(aChildID);
 }
 
 // Next process-local Tab ID.

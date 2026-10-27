@@ -2803,6 +2803,7 @@ class Document : public nsINode,
                "Display documents should not nest");
     mDisplayDocument = aDisplayDocument;
     mHasDisplayDocument = !!aDisplayDocument;
+    mIsBeingUsedAsImage |= aDisplayDocument->mIsBeingUsedAsImage;
   }
 
   /**
@@ -4853,11 +4854,11 @@ class Document : public nsINode,
   // Helper for GetScrollingElement/IsScrollingElement.
   bool IsPotentiallyScrollable(HTMLBodyElement* aBody);
 
-  // Whether GetScrollingElementImpl / IsPotentiallyScrollableImpl should flush
-  // pending style and frame construction before answering.
+  // Whether GetScrollingElementImpl should flush pending style and frame
+  // construction before answering.
   enum class Flush : bool { No, Yes };
   Element* GetScrollingElementImpl(Flush);
-  bool IsPotentiallyScrollableImpl(HTMLBodyElement* aBody, Flush);
+  bool IsPotentiallyScrollableImpl(HTMLBodyElement* aBody);
 
   void MaybeAllowStorageForOpenerAfterUserInteraction();
 
@@ -5898,7 +5899,7 @@ class Document : public nsINode,
   RefPtr<ResizeObserver> mAutoSizeImageObserver;
 
   RefPtr<class FragmentDirective> mFragmentDirective;
-  UniquePtr<RadioGroupContainer> mRadioGroupContainer;
+  RefPtr<RadioGroupContainer> mRadioGroupContainer;
 
   nsCOMPtr<nsIURI> mTLSCertificateBindingURI;
 

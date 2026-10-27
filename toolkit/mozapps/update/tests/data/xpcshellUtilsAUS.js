@@ -113,6 +113,11 @@ const ERR_PARENT_PID_PERSISTS =
 const ERR_BGTASK_EXCLUSIVE =
   "failed to exclusively open executable file from background task: ";
 
+// Sentinel value for the aExpectedExitValue parameter of runUpdate, to be used
+// when the updater is expected to crash. A crash has no portable exit value, so
+// the exit value cannot tell a crash apart from a graceful failure.
+const EXIT_VALUE_CRASHED = "crashed";
+
 const LOG_SVC_SUCCESSFUL_LAUNCH = "Process was started... waiting on result.";
 const LOG_SVC_UNSUCCESSFUL_LAUNCH =
   "The install directory path is not valid for this application.";
@@ -2128,7 +2133,7 @@ function readServiceLogFile() {
  *          installed application.
  * @param   aExpectedExitValue
  *          The expected exit value from the updater binary for non-service
- *          tests.
+ *          tests, or EXIT_VALUE_CRASHED when the updater is expected to crash.
  * @param   aCheckSvcLog
  *          Whether the service log should be checked for service tests.
  * @param   aPatchDirPath (optional)
@@ -2233,7 +2238,16 @@ function runUpdate(
 
   let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
   process.init(launchBin);
-  process.run(true, args, args.length);
+  try {
+    process.run(true, args, args.length);
+  } catch (e) {
+    // nsIProcess.run throws when the process exits with a negative exit value,
+    // which is how Windows reports a process that crashed. Leave it to the exit
+    // value check below to tell whether that crash was expected.
+    if (process.exitValue >= 0) {
+      throw e;
+    }
+  }
 
   resetEnvironment();
 
@@ -2241,15 +2255,19 @@ function runUpdate(
     Services.env.set("MOZ_TEST_SHORTER_WAIT_PID", "");
   }
 
+  let exitValue = process.exitValue;
+  let expectCrash = aExpectedExitValue == EXIT_VALUE_CRASHED;
+  let checkExitValue = !gIsServiceTest && !expectCrash;
+
   let status = readStatusFile();
   if (
-    (!gIsServiceTest && process.exitValue != aExpectedExitValue) ||
+    (checkExitValue && exitValue != aExpectedExitValue) ||
     (status != aExpectedStatus && !gIsServiceTest && !isInvalidArgTest)
   ) {
-    if (process.exitValue != aExpectedExitValue) {
+    if (checkExitValue && exitValue != aExpectedExitValue) {
       logTestInfo(
         "updater exited with unexpected value! Got: " +
-          process.exitValue +
+          exitValue +
           ", Expected: " +
           aExpectedExitValue
       );
@@ -2272,9 +2290,9 @@ function runUpdate(
     }
   }
 
-  if (!gIsServiceTest) {
+  if (checkExitValue) {
     Assert.equal(
-      process.exitValue,
+      exitValue,
       aExpectedExitValue,
       "the process exit value" + MSG_SHOULD_EQUAL
     );
@@ -4213,19 +4231,54 @@ function checkFilesAfterUpdateCommon(aStageDirExists, aToBeDeletedDirExists) {
   }
 
   debugDump(
-    "testing backup files should not be left behind in the " +
+    "testing temporary files should not be left behind in the " +
       "application directory"
   );
   let applyToDir = getApplyDirFile();
-  checkFilesInDirRecursive(applyToDir, checkForBackupFiles);
+  checkFilesInDirRecursive(applyToDir, checkForTemporaryFiles);
 
   if (stageDir.exists()) {
     debugDump(
-      "testing backup files should not be left behind in the " +
+      "testing temporary files should not be left behind in the " +
         "staging directory"
     );
-    checkFilesInDirRecursive(stageDir, checkForBackupFiles);
+    checkFilesInDirRecursive(stageDir, checkForTemporaryFiles);
   }
+}
+
+/**
+ * Asserts that the tobedeleted directory contains exactly aExpectedCount
+ * relocated files (files whose names start with "moz").
+ *
+ * @param   aExpectedCount
+ *          The number of relocated files that the directory should contain.
+ * @returns
+ *          The relocated files as an array of nsIFile. Relocated files are
+ *          named after a UUID, so this is the only way for a caller to check
+ *          which files were relocated, for instance by comparing contents.
+ */
+function checkToBeDeletedFileCount(aExpectedCount) {
+  let toBeDeletedDir = getApplyDirFile(DIR_TOBEDELETED);
+  let relocatedFiles = [];
+  // The directory only exists on Windows, and only once the updater had a
+  // reason to create it, so a missing directory means no relocated file.
+  if (toBeDeletedDir.exists()) {
+    let dirEntries = toBeDeletedDir.directoryEntries;
+    while (dirEntries.hasMoreElements()) {
+      let entry = dirEntries.nextFile;
+      if (entry.isFile() && entry.leafName.startsWith("moz")) {
+        relocatedFiles.push(entry);
+      }
+    }
+  }
+  Assert.equal(
+    relocatedFiles.length,
+    aExpectedCount,
+    "the tobedeleted directory should contain " +
+      aExpectedCount +
+      " relocated file(s)"
+  );
+  return relocatedFiles;
 }
 
 /**
@@ -4417,18 +4470,22 @@ async function waitForFilesInUse() {
 }
 
 /**
- * Helper function for updater binary tests for verifying there are no update
- * backup files left behind after an update.
+ * Helper function for updater binary tests for verifying there are no temporary
+ * update files left behind after an update.
  *
  * @param   aFile
- *          An nsIFile to check if it has moz-backup for its extension.
+ *          An nsIFile to check if it has moz-backup or moz-draft for its
+ *          extension.
  */
-function checkForBackupFiles(aFile) {
-  Assert.notEqual(
-    getFileExtension(aFile),
-    "moz-backup",
-    "the file's extension should not equal moz-backup" + getMsgPath(aFile.path)
-  );
+function checkForTemporaryFiles(aFile) {
+  for (const extension of ["moz-backup", "moz-draft"]) {
+    Assert.notEqual(
+      getFileExtension(aFile),
+      extension,
+      `the file's extension should not equal ${extension}` +
+        getMsgPath(aFile.path)
+    );
+  }
 }
 
 /**
