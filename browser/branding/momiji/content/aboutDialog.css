@@ -3,8 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #aboutDialogContainer {
-  /* Gradient từ trái sang phải: Xanh lá nhạt -> Xanh cyan -> Xanh dương */
-  background-image: linear-gradient(to right, #d0f9d1, #a3daef, #88a1ff);
+  /* Gradient tỏa từ đáy lên: Vàng -> Cam -> Đỏ */
+  background-image: radial-gradient(ellipse at 50% 100%, #ffc107 0%, #ff9810 30%, #ff5a18 60%, #e0102a 100%);
   
   /* Đảm bảo text hiển thị rõ trên nền sáng */
   color: #333; 
