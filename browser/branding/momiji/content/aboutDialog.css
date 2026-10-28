@@ -6,8 +6,8 @@
   /* Gradient tỏa từ đáy lên: Vàng -> Cam -> Đỏ */
   background-image: radial-gradient(ellipse at 50% 100%, #ffc107 0%, #ff9810 30%, #ff5a18 60%, #e0102a 100%);
   
-  /* Đảm bảo text hiển thị rõ trên nền sáng */
-  color: #333; 
+  /* Đảm bảo text hiển thị rõ trên nền đỏ cam */
+  color: white;
   color-scheme: light;
 }
 
