@@ -2375,20 +2375,16 @@ void ServiceWorkerManager::DispatchFetchEvent(nsIInterceptedChannel* aChannel,
 
   MOZ_DIAGNOSTIC_ASSERT(serviceWorker);
 
+  // FIXME: This doesn't need to be a runnable anymore. Previously, this code
+  // was part of the child-intercept code path for content process workers, and
+  // used a runnable here to wait for the parent process to send permissions.
+  //
+  // Nowadays this is only ever called in the parent process, so the potential
+  // dispatch is unnecessary.
   RefPtr<ContinueDispatchFetchEventRunnable> continueRunnable =
       new ContinueDispatchFetchEventRunnable(serviceWorker->WorkerPrivate(),
                                              aChannel, loadGroup);
-
-  // When this service worker was registered, we also sent down the permissions
-  // for the runnable. They should have arrived by now, but we still need to
-  // wait for them if they have not.
-  RefPtr<PermissionManager> permMgr = PermissionManager::GetInstance();
-  if (permMgr) {
-    permMgr->WhenPermissionsAvailable(serviceWorker->Principal(),
-                                      continueRunnable);
-  } else {
-    continueRunnable->HandleError();
-  }
+  continueRunnable->Run();
 }
 
 ServiceWorkerLifetimeExtension ServiceWorkerManager::DetermineLifetimeForClient(
