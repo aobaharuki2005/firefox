@@ -317,3 +317,226 @@ add_task(async function testProviderSelectFallsBackToCustom() {
     id: "global",
   });
 });
+
+// Bug 2052678: switching the resolver dropdown away from
+// "custom" to a built-in provider used to lose the previously entered custom
+// URI.
+add_task(async function testCustomProviderTextbox() {
+  await DoHTestUtils.loadRemoteSettingsConfig({
+    providers: "example-1, example-2",
+    rolloutEnabled: true,
+    steeringEnabled: false,
+    steeringProviders: "",
+    autoDefaultEnabled: false,
+    autoDefaultProviders: "",
+    id: "global",
+  });
+
+  const CUSTOM_URI = "https://custom-provider.example/dns-query";
+
+  Services.prefs.setIntPref(TRR_MODE_PREF, Ci.nsIDNSService.MODE_TRRFIRST);
+  Services.prefs.setStringPref(TRR_CUSTOM_URI_PREF, CUSTOM_URI);
+  Services.prefs.setStringPref(TRR_URI_PREF, CUSTOM_URI);
+
+  await openPreferencesViaOpenPreferencesAPI("dnsOverHttps", {
+    leaveOpen: true,
+  });
+  let win = gBrowser.selectedBrowser.contentWindow;
+
+  let providerSelect = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohProviderSelect")
+  );
+  let customProvider = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohCustomProvider")
+  );
+
+  is(
+    providerSelect.value,
+    "custom",
+    "URI outside the provider list starts the dropdown on 'custom'"
+  );
+  is(
+    customProvider.value,
+    CUSTOM_URI,
+    "dohCustomProvider is backed by network.trr.custom_uri"
+  );
+  ok(
+    customProvider.visible,
+    "Custom textbox is visible while 'custom' is selected"
+  );
+
+  info("Switch dropdown to a built-in provider");
+  providerSelect.userChange(FIRST_RESOLVER_VALUE);
+
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "Selecting a built-in provider updates network.trr.uri"
+  );
+  is(
+    Services.prefs.getStringPref(TRR_CUSTOM_URI_PREF),
+    CUSTOM_URI,
+    "network.trr.custom_uri is not clobbered by switching to a built-in"
+  );
+  ok(
+    !customProvider.visible,
+    "Custom textbox is hidden while a built-in provider is selected"
+  );
+
+  info("Switch back to 'custom'; the last custom URI must be restored");
+  providerSelect.userChange("custom");
+
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    CUSTOM_URI,
+    "Re-selecting 'custom' restores network.trr.uri from network.trr.custom_uri"
+  );
+  is(
+    customProvider.value,
+    CUSTOM_URI,
+    "dohCustomProvider still exposes the stored custom URI"
+  );
+  ok(customProvider.visible, "Custom textbox is visible again");
+
+  gBrowser.removeCurrentTab();
+
+  info("With an empty custom_uri, switching to 'custom' falls back to a space");
+  Services.prefs.setStringPref(TRR_URI_PREF, FIRST_RESOLVER_VALUE);
+  Services.prefs.clearUserPref(TRR_CUSTOM_URI_PREF);
+
+  await openPreferencesViaOpenPreferencesAPI("dnsOverHttps", {
+    leaveOpen: true,
+  });
+  win = gBrowser.selectedBrowser.contentWindow;
+  providerSelect = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohProviderSelect")
+  );
+
+  providerSelect.userChange("custom");
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "Empty custom_uri when switching to custom keeps the current resolver in the TRR URI pref"
+  );
+  is(
+    Services.prefs.getStringPref(TRR_CUSTOM_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "Empty custom_uri when switching to custom moves the current resolver into the custom TRR URI pref"
+  );
+
+  gBrowser.removeCurrentTab();
+  await resetPrefs();
+  await DoHTestUtils.loadRemoteSettingsConfig({
+    providers: "",
+    rolloutEnabled: false,
+    steeringEnabled: false,
+    steeringProviders: "",
+    autoDefaultEnabled: false,
+    autoDefaultProviders: "",
+    id: "global",
+  });
+});
+
+// Regression test for Bug 2055929: switching away from a custom URI that was
+// stolen from the current provider must not corrupt network.trr.uri, and
+// editing the custom textbox must keep network.trr.uri in sync without a
+// later edit or a stale recompute reverting the latest value.
+add_task(async function testCustomProviderStaysInSync() {
+  await DoHTestUtils.loadRemoteSettingsConfig({
+    providers: "example-1, example-2",
+    rolloutEnabled: true,
+    steeringEnabled: false,
+    steeringProviders: "",
+    autoDefaultEnabled: false,
+    autoDefaultProviders: "",
+    id: "global",
+  });
+
+  Services.prefs.setIntPref(TRR_MODE_PREF, Ci.nsIDNSService.MODE_TRRFIRST);
+  Services.prefs.setStringPref(TRR_URI_PREF, FIRST_RESOLVER_VALUE);
+
+  await openPreferencesViaOpenPreferencesAPI("dnsOverHttps", {
+    leaveOpen: true,
+  });
+  let win = gBrowser.selectedBrowser.contentWindow;
+  let providerSelect = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohProviderSelect")
+  );
+  let customProvider = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohCustomProvider")
+  );
+
+  info(
+    "Switch to custom with no stored custom_uri; it steals the current provider's URI"
+  );
+  providerSelect.userChange("custom");
+  info("Switch back to that same provider");
+  providerSelect.userChange(FIRST_RESOLVER_VALUE);
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "network.trr.uri stays on the selected provider after switching away from a stolen custom URI"
+  );
+
+  const CUSTOM_URI = "https://custom-provider.example/dns-query";
+  const SECOND_CUSTOM_URI = "https://second-custom-provider.example/dns-query";
+
+  info("Type a real custom URL");
+  providerSelect.userChange("custom");
+  customProvider.userChange(CUSTOM_URI);
+  is(
+    Services.prefs.getStringPref(TRR_CUSTOM_URI_PREF),
+    CUSTOM_URI,
+    "network.trr.custom_uri stores the committed custom URL"
+  );
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    CUSTOM_URI,
+    "network.trr.uri is updated as soon as the custom URL is committed"
+  );
+  is(
+    providerSelect.value,
+    "custom",
+    "Dropdown stays on 'custom' after committing the URL"
+  );
+
+  info("A later edit must win over an earlier one");
+  customProvider.userChange(SECOND_CUSTOM_URI);
+  is(
+    Services.prefs.getStringPref(TRR_CUSTOM_URI_PREF),
+    SECOND_CUSTOM_URI,
+    "network.trr.custom_uri reflects the most recently committed custom URL"
+  );
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    SECOND_CUSTOM_URI,
+    "network.trr.uri reflects the most recently committed custom URL"
+  );
+
+  info(
+    "A stale confirmation/URI-changed notification must not revert the latest edit"
+  );
+  win.Preferences.getSetting("dohURL").emit("change");
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    SECOND_CUSTOM_URI,
+    "network.trr.uri is unaffected by a re-triggered recompute"
+  );
+  is(
+    providerSelect.value,
+    "custom",
+    "Dropdown still shows 'custom' after the recompute"
+  );
+
+  gBrowser.removeCurrentTab();
+  await resetPrefs();
+  await DoHTestUtils.loadRemoteSettingsConfig({
+    providers: "",
+    rolloutEnabled: false,
+    steeringEnabled: false,
+    steeringProviders: "",
+    autoDefaultEnabled: false,
+    autoDefaultProviders: "",
+    id: "global",
+  });
+});

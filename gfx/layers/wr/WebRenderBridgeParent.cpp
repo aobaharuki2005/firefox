@@ -602,7 +602,7 @@ static bool ReadRawFont(const OpAddRawFont& aOp, wr::ShmSegmentsReader& aReader,
     return false;
   }
   gfxOTSExpandingMemoryStream<WROTSAlloc> output(lengthHint);
-  gfxOTSContext otsContext;
+  gfxOTSContext otsContext(/* aDropShapingTables = */ true);
   if (!otsContext.Process(&output, source.Data(), source.Length())) {
     gfxCriticalNote << "Failed sanitizing font " << aOp.key().mHandle;
     return false;
@@ -610,6 +610,34 @@ static bool ReadRawFont(const OpAddRawFont& aOp, wr::ShmSegmentsReader& aReader,
   wr::Vec<uint8_t> bytes = output.forget();
 
   aUpdates.AddRawFont(aOp.key(), bytes, aOp.fontIndex());
+  return true;
+}
+
+static bool ValidateFontDescriptor(wr::Vec<uint8_t>& aBytes,
+                                   uint32_t& aFontIndex) {
+  gfx::FontType fontType =
+#ifdef WIN32
+      gfx::FontType::DWRITE
+#elif defined(XP_DARWIN)
+      gfx::FontType::MAC
+#elif defined(MOZ_WIDGET_GTK)
+      gfx::FontType::FONTCONFIG
+#elif defined(MOZ_WIDGET_ANDROID)
+      gfx::FontType::FREETYPE
+#else
+      gfx::FontType::UNKNOWN
+#endif
+      ;
+
+  std::string path;
+  if (!gfx::Factory::ValidateUnscaledFontDescriptor(
+          fontType, aBytes.Data(), aBytes.Length(), path, aFontIndex)) {
+     return false;
+   }
+  if (!path.empty()) {
+    aBytes.Clear();
+    aBytes.PushBytes(Range<uint8_t>((uint8_t*)path.c_str(), path.length()));
+  }
   return true;
 }
 
@@ -775,8 +803,10 @@ bool WebRenderBridgeParent::UpdateResources(
         }
 
         wr::Vec<uint8_t> bytes;
-        if (reader.Read(op.bytes(), bytes)) {
-          aUpdates.AddFontDescriptor(op.key(), bytes, op.fontIndex());
+        uint32_t fontIndex = op.fontIndex();
+        if (reader.Read(op.bytes(), bytes) &&
+            ValidateFontDescriptor(bytes, fontIndex)) {
+          aUpdates.AddFontDescriptor(op.key(), bytes, fontIndex);
         } else {
           gfxCriticalNote << "TOpAddFontDescriptor failed";
           success = false;

@@ -5,6 +5,10 @@
 #include "ipc/IPCMessageUtils.h"
 
 #include <algorithm>
+#ifdef XP_LINUX
+#  include <linux/magic.h>
+#  include <sys/vfs.h>
+#endif
 
 #if defined(XP_UNIX)
 #  include <unistd.h>
@@ -21,9 +25,10 @@
 #include "nsIFile.h"
 #include "nsReadLine.h"
 #include "nsIClassInfoImpl.h"
+#include "mozilla/FileUtils.h"
+#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "mozilla/ipc/RandomAccessStreamParams.h"
-#include "mozilla/FileUtils.h"
 #include "mozilla/UniquePtr.h"
 #include "nsNetCID.h"
 #include "nsNetUtil.h"
@@ -358,6 +363,22 @@ nsresult nsFileStreamBase::DoOpen() {
   }
 
   CleanUpOpen();
+
+#ifdef XP_LINUX
+  if (NS_SUCCEEDED(rv) &&
+      (mBehaviorFlags & nsIFileInputStream::NO_MAGIC_FILES)) {
+    struct statfs fs;
+    if (fstatfs(PR_FileDesc2NativeHandle(fd), &fs) != 0) {
+      rv = NS_BASE_STREAM_OSERROR;
+    } else if (fs.f_type == PROC_SUPER_MAGIC &&
+               !mozilla::StaticPrefs::dom_file_allowMagicFiles()) {
+      rv = NS_ERROR_FILE_ACCESS_DENIED;
+    }
+    if (NS_FAILED(rv)) {
+      PR_Close(fd);
+    }
+  }
+#endif
 
   if (NS_FAILED(rv)) {
     mState = eError;

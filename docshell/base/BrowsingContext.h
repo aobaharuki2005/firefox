@@ -13,6 +13,7 @@
 #include "mozilla/Maybe.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/Span.h"
+#include "mozilla/WeakPtr.h"
 
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/LocationBase.h"
@@ -376,7 +377,9 @@ struct EmbedderColorSchemes {
 // Trees of BrowsingContexts should only ever contain nodes of the
 // same BrowsingContext::Type. This is enforced by asserts in the
 // BrowsingContext::Create* methods.
-class BrowsingContext : public nsILoadContext, public nsWrapperCache {
+class BrowsingContext : public nsILoadContext,
+                        public nsWrapperCache,
+                        public SupportsWeakPtr {
   MOZ_DECL_SYNCED_CONTEXT(BrowsingContext, MOZ_EACH_BC_FIELD)
   NS_INLINE_DECL_STATIC_IID(NS_DOM_BROWSINGCONTEXT_IID)
 
@@ -974,6 +977,7 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
     // deserialized before other BrowsingContext in the BrowsingContextGroup
     // have been initialized.
     uint64_t mParentId = 0;
+    uint64_t mOpenerInnerWindowId = 0;
     already_AddRefed<WindowContext> GetParent();
     uint64_t GetOpenerId() const { return mFields.Get<IDX_OpenerId>(); }
 
@@ -1492,6 +1496,8 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
     }
   }
 
+  static void UnregisterBrowserId(BrowsingContext* aBrowsingContext);
+
   // Allow if the process attemping to set field is the same as the owning
   // process. Deprecated. New code that might use this should generally be moved
   // to WindowContext or be settable only by the parent process.
@@ -1518,6 +1524,10 @@ class BrowsingContext : public nsILoadContext, public nsWrapperCache {
 
   // Unique id identifying BrowsingContext
   const uint64_t mBrowsingContextId;
+
+  // The key under which this context was last added to the current top by
+  // BrowserId map.
+  Maybe<uint64_t> mCurrentTopBrowserIdKey;
 
   RefPtr<BrowsingContextGroup> mGroup;
   RefPtr<WindowContext> mParentWindow;

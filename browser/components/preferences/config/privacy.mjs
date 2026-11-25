@@ -3442,30 +3442,34 @@ Preferences.addSetting({
 
 Preferences.addSetting({
   id: "dohCustomProvider",
-  deps: ["dohProviderSelect", "dohURL", "dohMode"],
+  pref: "network.trr.custom_uri",
+  deps: ["dohProviderSelect", "dohMode", "dohURL"],
   visible: deps => {
     return deps.dohProviderSelect.value == "custom";
   },
   disabled: ({ dohMode, dohURL }) => dohMode.locked || dohURL.locked,
-  get(_val, deps) {
-    return deps.dohURL.value;
+  set(val) {
+    // Empty string is ignored by the DoH service; use a space instead.
+    return val?.trim() || " ";
   },
-  set(val, deps) {
-    deps.dohURL.value = val.trim();
+  onUserChange(val, deps, setting) {
+    // Keep network.trr.uri in sync with the value set() just committed, so
+    // dohProviderSelect doesn't flip off "custom". Reading it back (rather
+    // than recomputing it here) keeps the two prefs from falling out of sync.
+    deps.dohURL.value = setting.pref.value;
   },
 });
 
 Preferences.addSetting({
   id: "dohProviderSelect",
-  deps: ["dohURL", "dohDefaultURL", "dohMode"],
-  _custom: false,
+  deps: ["dohURL", "dohCustomProvider", "dohDefaultURL", "dohMode"],
   disabled: ({ dohMode, dohURL }) => dohMode.locked || dohURL.locked,
   onUserChange: value => {
     Glean.securityDohSettings.providerChoiceValue.record({
       value,
     });
   },
-  getControlConfig(config, deps) {
+  getControlConfig(config) {
     let options = [];
 
     let resolvers = lazy.DoHConfigController.currentConfig.providerList;
@@ -3476,10 +3480,6 @@ Preferences.addSetting({
       // the default value for the pref isn't included in the resolvers list
       // so we'll make a stub for it. Without an id, we'll have to use the url as the label
       resolvers.unshift({ uri: defaultURI });
-    }
-    let currentURI = deps.dohURL.value;
-    if (currentURI && !resolvers.some(p => p.uri == currentURI)) {
-      this._custom = true;
     }
 
     options = resolvers.map(resolver => {
@@ -3507,23 +3507,46 @@ Preferences.addSetting({
     };
   },
   get(_val, deps) {
-    if (this._custom) {
-      return "custom";
-    }
     let currentURI = deps.dohURL.value || deps.dohDefaultURL.value;
     let resolvers = lazy.DoHConfigController.currentConfig.providerList;
-    if (!resolvers.some(p => p.uri == currentURI)) {
-      this._custom = true;
+    // We always show the custom state if the current URI matches the custom pref,
+    // or if it is not in the list of resolvers.
+    if (
+      currentURI == deps.dohCustomProvider.value ||
+      !resolvers.some(p => p.uri == currentURI)
+    ) {
       return "custom";
     }
     return currentURI;
   },
   set(val, deps, setting) {
-    if (val != "custom") {
-      this._custom = false;
-      deps.dohURL.value = val;
+    if (val == "custom") {
+      let customURI = Services.prefs.getStringPref(
+        "network.trr.custom_uri",
+        ""
+      );
+      // If we have a value from the pref, take it.
+      // Otherwise, steal the current provider's URI.
+      if (customURI?.trim()) {
+        deps.dohURL.value = customURI?.trim();
+      } else {
+        deps.dohCustomProvider.value = deps.dohURL.value;
+      }
     } else {
-      this._custom = true;
+      deps.dohURL.value = val;
+      // Clear the custom pref if it matches one of the resolvers in the dropdown
+      let resolvers = lazy.DoHConfigController.currentConfig.providerList;
+      if (resolvers.some(p => p.uri == deps.dohCustomProvider.value)) {
+        // Setting the pref to empty string will make it have the default
+        // pref value which makes us fallback to using the default TRR
+        // resolver in network.trr.default_provider_uri.
+        // Instead, we set it to "(space)" which is then
+        // treated as an entered value that fails to parse as a URI.
+        // Regardless, this should never be actually assigned to
+        // network.trr.uri, and this is just used to clear out a URI
+        // taken from a provider in the list.
+        deps.dohCustomProvider.value = " ";
+      }
     }
     setting.emit("change");
     return val;

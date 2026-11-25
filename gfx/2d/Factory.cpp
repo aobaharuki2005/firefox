@@ -121,8 +121,8 @@ StaticMutex Factory::mFTLock;
 
 already_AddRefed<SharedFTFace> FTUserFontData::CloneFace() {
   if (mFontData) {
-    RefPtr<SharedFTFace> face = Factory::NewSharedFTFaceFromData(
-        nullptr, mFontData, mLength, mFaceIndex, this);
+    RefPtr<SharedFTFace> face =
+        Factory::NewSharedFTFaceFromData(nullptr, mFontData, mFaceIndex, this);
     if (!face ||
         (FT_Select_Charmap(face->GetFace(), FT_ENCODING_UNICODE) != FT_Err_Ok &&
          FT_Select_Charmap(face->GetFace(), FT_ENCODING_MS_SYMBOL) !=
@@ -425,6 +425,33 @@ already_AddRefed<NativeFontResource> Factory::CreateNativeFontResource(
   }
 }
 
+bool Factory::ValidateUnscaledFontDescriptor(FontType aType,
+                                             const uint8_t* aName,
+                                             size_t aNameLength,
+                                             std::string& aResultName,
+                                             uint32_t& aIndex) {
+  switch (aType) {
+#ifdef WIN32
+    case FontType::DWRITE:
+      return true;
+#elif defined(XP_DARWIN)
+    case FontType::MAC:
+      return true;
+#elif defined(MOZ_WIDGET_GTK)
+    case FontType::FONTCONFIG:
+      return UnscaledFontFontconfig::ValidateFontDescriptor(
+          aName, aNameLength, aResultName, aIndex);
+#elif defined(MOZ_WIDGET_ANDROID)
+    case FontType::FREETYPE:
+      return UnscaledFontFreeType::ValidateFontDescriptor(aName, aNameLength,
+                                                          aResultName, aIndex);
+#endif
+    default:
+      gfxWarning() << "Invalid type specified for UnscaledFont font descriptor";
+      return false;
+  }
+}
+
 already_AddRefed<UnscaledFont> Factory::CreateUnscaledFontFromFontDescriptor(
     FontType aType, const uint8_t* aData, uint32_t aDataLength,
     uint32_t aIndex) {
@@ -554,13 +581,13 @@ already_AddRefed<SharedFTFace> Factory::NewSharedFTFace(FT_Library aFTLibrary,
 }
 
 FT_Face Factory::NewFTFaceFromData(FT_Library aFTLibrary, const uint8_t* aData,
-                                   size_t aDataSize, int aFaceIndex) {
+                                   uint32_t aLength, int aFaceIndex) {
   StaticMutexAutoLock lock(mFTLock);
   if (!aFTLibrary) {
     aFTLibrary = mFTLibrary;
   }
   FT_Face face;
-  if (FT_New_Memory_Face(aFTLibrary, aData, aDataSize, aFaceIndex, &face) !=
+  if (FT_New_Memory_Face(aFTLibrary, aData, aLength, aFaceIndex, &face) !=
       FT_Err_Ok) {
     return nullptr;
   }
@@ -568,10 +595,10 @@ FT_Face Factory::NewFTFaceFromData(FT_Library aFTLibrary, const uint8_t* aData,
 }
 
 already_AddRefed<SharedFTFace> Factory::NewSharedFTFaceFromData(
-    FT_Library aFTLibrary, const uint8_t* aData, size_t aDataSize,
-    int aFaceIndex, SharedFTFaceData* aSharedData) {
-  if (FT_Face face =
-          NewFTFaceFromData(aFTLibrary, aData, aDataSize, aFaceIndex)) {
+    FT_Library aFTLibrary, FontData* aFontData, int aFaceIndex,
+    SharedFTFaceData* aSharedData) {
+  if (FT_Face face = NewFTFaceFromData(aFTLibrary, aFontData->Data(),
+                                       aFontData->Length(), aFaceIndex)) {
     return MakeAndAddRef<SharedFTFace>(face, aSharedData);
   } else {
     return nullptr;

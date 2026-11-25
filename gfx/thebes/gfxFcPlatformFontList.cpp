@@ -7,6 +7,7 @@
 #include "gfxFcPlatformFontList.h"
 #include "gfxFont.h"
 #include "gfxFT2Utils.h"
+#include "gfxOTSUtils.h"
 #include "gfxPlatform.h"
 #include "nsPresContext.h"
 #include "mozilla/dom/ContentChild.h"
@@ -492,21 +493,16 @@ gfxFontconfigFontEntry::AutoHBFace gfxFontconfigFontEntry::GetHBFace() {
       index &= 0xFFFF;
       face = hb_face_create_from_file_or_fail((const char*)filename, index);
     } else {
-      // If we have an FT_Font with webfont user data attached, we can use
-      // hb_face_create to wrap that.
-      if (mFTFaceInitialized) {
-        if (const FTUserFontData* ufd = GetUserFontData()) {
-          if (ufd->FontData()) {
-            hb_blob_t* blob = hb_blob_create(
-                (const char*)ufd->FontData(), ufd->FontDataLength(),
-                HB_MEMORY_MODE_READONLY, nullptr, nullptr);
-            // Currently the face index is always zero, as we don't support
-            // collections as webfonts.
-            face = hb_face_create(blob, 0);
-            // Drop our blob reference; the face will hold on to it.
-            hb_blob_destroy(blob);
-          }
-        }
+      // If we have webfont user data, we can use hb_face_create to wrap that.
+      if (const auto* ufd = GetUserFontData()) {
+        hb_blob_t* blob =
+            hb_blob_create((const char*)ufd->Data(), ufd->Length(),
+                           HB_MEMORY_MODE_READONLY, nullptr, nullptr);
+        // Currently the face index is always zero, as we don't support
+        // collections as webfonts.
+        face = hb_face_create(blob, 0);
+        // Drop our blob reference; the face will hold on to it.
+        hb_blob_destroy(blob);
       }
     }
     if (!face) {
@@ -628,20 +624,16 @@ bool gfxFontconfigFontEntry::TestCharacterMap(uint32_t aCh) {
 }
 
 bool gfxFontconfigFontEntry::HasFontTable(uint32_t aTableTag) {
-  if (FTUserFontData* ufd = GetUserFontData()) {
-    if (ufd->FontData()) {
-      return !!gfxFontUtils::FindTableDirEntry(ufd->FontData(), aTableTag);
-    }
+  if (auto* ufd = GetUserFontData()) {
+    return !!gfxFontUtils::FindTableDirEntry(ufd->Data(), aTableTag);
   }
   return gfxFT2FontEntryBase::FaceHasTable(GetFTFace(), aTableTag);
 }
 
 hb_blob_t* gfxFontconfigFontEntry::GetFontTable(uint32_t aTableTag) {
   // for data fonts, read directly from the font data
-  if (FTUserFontData* ufd = GetUserFontData()) {
-    if (ufd->FontData()) {
-      return gfxFontUtils::GetTableFromFontData(ufd->FontData(), aTableTag);
-    }
+  if (auto* ufd = GetUserFontData()) {
+    return gfxFontUtils::GetTableFromFontData(ufd->Data(), aTableTag);
   }
 
   // Use the cache only if it has already been created.
@@ -1094,10 +1086,9 @@ SharedFTFace* gfxFontconfigFontEntry::GetFTFace() {
   return mFTFace;
 }
 
-FTUserFontData* gfxFontconfigFontEntry::GetUserFontData() {
-  auto* face = GetFTFace();
-  if (face && face->GetData()) {
-    return static_cast<FTUserFontData*>(face->GetData());
+FontData* gfxFontconfigFontEntry::GetUserFontData() {
+  if (mUserFontData) {
+    return mUserFontData->mFontData;
   }
   return nullptr;
 }
@@ -2399,8 +2390,23 @@ already_AddRefed<gfxFontEntry> gfxFcPlatformFontList::LookupLocalFont(
 already_AddRefed<gfxFontEntry> gfxFcPlatformFontList::MakePlatformFont(
     const nsACString& aFontName, WeightRange aWeightForEntry,
     StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
-    const uint8_t* aFontData, uint32_t aLength) {
-  RefPtr<FTUserFontData> ufd = new FTUserFontData(aFontData, aLength, 0);
+    FontData* aFontData) {
+  // Make a copy of the font data with shaping tables stripped, and use this
+  // to instantiate the FreeType face; we only need this face to support
+  // rasterization, not shaping behaviors.
+  // We disable validation because the resource was already sanitized when
+  // initially downloaded; we're re-running OTS here purely to filter out the
+  // shaping-related tables.
+  gfxOTSExpandingMemoryStream<> output(aFontData->Length());
+  gfxOTSContext otsContext(/* aDropShapingTables = */ true,
+                           /* aDisableValidation = */ true);
+  if (!otsContext.Process(&output, aFontData->Data(), aFontData->Length())) {
+    return nullptr;
+  }
+  uint32_t length = output.Tell();
+  RefPtr ftFontData = MakeRefPtr<FontData>(
+      static_cast<const uint8_t*>(output.forget()), length);
+  RefPtr<FTUserFontData> ufd = new FTUserFontData(ftFontData);
   RefPtr<SharedFTFace> face = ufd->CloneFace();
   if (!face) {
     return nullptr;
@@ -2696,13 +2702,15 @@ void gfxFcPlatformFontList::AddGenericFonts(
       aLanguage == nsGkAtoms::x_math) {
     nsAtom* langGroup = GetLangGroup(aLanguage);
     nsAutoCString fontlistValue;
-    mFontPrefs->LookupName(PrefName(generic, langGroup), fontlistValue);
+    AutoLock lock(mLock);
+    GetFontPrefs()->LookupName(PrefName(generic, langGroup), fontlistValue);
     if (fontlistValue.IsEmpty()) {
       // The font name list may have two or more family names as comma
       // separated list.  In such case, not matching with generic font
       // name is fine because if the list prefers specific font, we
       // should try to use the pref with complicated path.
-      mFontPrefs->LookupNameList(PrefName(generic, langGroup), fontlistValue);
+      GetFontPrefs()->LookupNameList(PrefName(generic, langGroup),
+                                     fontlistValue);
     }
     if (!fontlistValue.IsEmpty()) {
       if (!fontlistValue.EqualsLiteral("serif") &&

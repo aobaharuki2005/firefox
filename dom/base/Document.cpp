@@ -864,6 +864,9 @@ Document* ExternalResourceMap::RequestResource(
     // chances are it failed for good reasons (security check, etc).
     // This must be done outside the WithEntryHandle functor, as it accesses
     // mPendingLoads.
+    // PendingLoad::StartLoad does the same if it had to defer AsyncOpen and
+    // that failed. It is called inside a script runnner (outside of
+    // WithEntryHandle functor) so it's safe.
     AddExternalResource(clone, nullptr, nullptr, aDisplayDocument);
   }
 
@@ -1157,7 +1160,27 @@ nsresult ExternalResourceMap::PendingLoad::StartLoad(
 
   mURI = aURI;
 
-  return channel->AsyncOpen(this);
+  if (nsContentUtils::IsSafeToRunScript()) {
+    return channel->AsyncOpen(this);
+  }
+
+  nsContentUtils::AddScriptRunner(NS_NewRunnableFunction(
+      "ExternalResourceMap::PendingLoad::StartLoad",
+      [self = RefPtr{this}, channel]() MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
+        ExternalResourceMap& map =
+            self->mDisplayDocument->ExternalResourceMap();
+        if (map.HaveShutDown() || NS_SUCCEEDED(channel->AsyncOpen(self))) {
+          return;
+        }
+        // Same handling as for a synchronous AsyncOpen failure in
+        // ExternalResourceMap::RequestResource: make sure we don't thrash
+        // things by trying this load again, since chances are it failed for
+        // good reasons (security check, etc).
+        const nsCOMPtr<nsIURI> uri = self->mURI;
+        const RefPtr<Document> displayDocument = self->mDisplayDocument;
+        map.AddExternalResource(uri, nullptr, nullptr, displayDocument);
+      }));
+  return NS_OK;
 }
 
 NS_IMPL_ISUPPORTS(ExternalResourceMap::LoadgroupCallbacks,
@@ -6241,7 +6264,9 @@ HTMLEditor* Document::GetHTMLEditor() const {
 }
 
 nsresult Document::EditingStateChanged() {
-  if (mRemovedFromDocShell) {
+  // Don't allow editing on non-HTML/XHTML documents.  Return NS_OK so that the
+  // setter of designMode on non-HTML documents does not fail.
+  if (mRemovedFromDocShell || !IsHTMLOrXHTML()) {
     return NS_OK;
   }
 
@@ -6339,13 +6364,6 @@ nsresult Document::EditingStateChanged() {
   bool makeWindowEditable = mEditingState == EditingState::eOff;
   bool spellRecheckAll = false;
   bool putOffToRemoveScriptBlockerUntilModifyingEditingState = false;
-
-  if (makeWindowEditable && NS_WARN_IF(!IsHTMLOrXHTML())) {
-    // Don't allow editing on non-HTML/XHTML documents.
-    // Return NS_OK so that the setter of designMode on non-HTML documents
-    // does not fail.
-    return NS_OK;
-  }
 
   RefPtr<HTMLEditor> htmlEditor;
   {
@@ -12692,20 +12710,6 @@ void Document::OnPageHide(bool aPersisted, EventTarget* aDispatchStartTarget,
     // reference to the root (in Document::mFullscreenRoot) since we can't
     // just traverse the doctree to get the root.
     Document::ExitFullscreenInDocTree(this);
-
-    // Since the document is removed from the doctree before OnPageHide() is
-    // called, ExitFullscreen() can't traverse from the root down to *this*
-    // document, so we must manually call CleanupFullscreenState() below too.
-    // Note that CleanupFullscreenState() clears Document::mFullscreenRoot,
-    // so we *must* call it after ExitFullscreen(), not before.
-    // OnPageHide() is called in every hidden (i.e. descendant) document,
-    // so calling CleanupFullscreenState() here will ensure all hidden
-    // documents have their fullscreen state reset.
-    CleanupFullscreenState();
-
-    // The fullscreenchange event is to be queued in the refresh driver,
-    // however a hidden page wouldn't trigger that again, so it makes no
-    // sense to dispatch such event here.
   }
 
   if (auto* element = HTMLVideoElement::FromNodeOrNull(
@@ -15622,12 +15626,19 @@ bool Document::IsFullscreenLeaf() {
   return GetFullscreenLeaf(*root);
 }
 
-static CallState ResetFullscreen(Document& aDocument) {
+enum class DispatchFullscreenChangeEvent : bool { No, Yes };
+
+static CallState ResetFullscreen(Document& aDocument,
+                                 DispatchFullscreenChangeEvent aDispatchEvent) {
   if (Element* fsElement = aDocument.GetUnretargetedFullscreenElement()) {
     aDocument.CleanupFullscreenState();
     NS_ASSERTION(!aDocument.Fullscreen(), "Should reset fullscreen");
-    DispatchFullscreenChange(aDocument, fsElement);
-    aDocument.EnumerateSubDocuments(ResetFullscreen);
+    if (aDispatchEvent == DispatchFullscreenChangeEvent::Yes) {
+      DispatchFullscreenChange(aDocument, fsElement);
+    }
+    aDocument.EnumerateSubDocuments([aDispatchEvent](Document& aSubDoc) {
+      return ResetFullscreen(aSubDoc, aDispatchEvent);
+    });
   }
   return CallState::Continue;
 }
@@ -15693,9 +15704,7 @@ void Document::ExitFullscreenInDocTree(Document* aMaybeNotARootDoc) {
     //
     // We still reset this document, otherwise it could keep a stale element
     // in its top layer with the fullscreen flag set.
-    if (aMaybeNotARootDoc->GetUnretargetedFullscreenElement()) {
-      aMaybeNotARootDoc->CleanupFullscreenState();
-    }
+    ResetFullscreen(*aMaybeNotARootDoc, DispatchFullscreenChangeEvent::No);
     return;
   }
 
@@ -15706,7 +15715,19 @@ void Document::ExitFullscreenInDocTree(Document* aMaybeNotARootDoc) {
   Document* fullscreenLeaf = GetFullscreenLeaf(root);
 
   // Walk the tree of fullscreen documents, and reset their fullscreen state.
-  ResetFullscreen(*root);
+  ResetFullscreen(*root, DispatchFullscreenChangeEvent::Yes);
+  // *aMaybeNotARootDoc* may have already been removed from the doctree, e.g.
+  // when ExitFullscreenInDocTree() is called from OnPageHide(). In that case
+  // we can't traverse from the root down to *aMaybeNotARootDoc*, so we must
+  // manually call ResetFullscreen() on it to ensure all hidden documents have
+  // their fullscreen state reset. If *aMaybeNotARootDoc* is reachable from
+  // the root, its fullscreen state has already been reset above and this call
+  // does nothing.
+  //
+  // The fullscreenchange event is to be queued in the refresh driver,
+  // however a hidden page wouldn't trigger that again, so it makes no
+  // sense to dispatch such event here.
+  ResetFullscreen(*aMaybeNotARootDoc, DispatchFullscreenChangeEvent::No);
 
   NS_ASSERTION(!root->Fullscreen(),
                "Fullscreen root should no longer be a fullscreen doc...");
@@ -15833,7 +15854,9 @@ void Document::RestorePreviousFullscreenState(UniquePtr<FullscreenExit> aExit) {
     if (!exitDoc->Fullscreen()) {
       // The document may have other fullscreen subdocuments which are not part
       // of the current fullscreen document chain, reset them as well.
-      exitDoc->EnumerateSubDocuments(ResetFullscreen);
+      exitDoc->EnumerateSubDocuments([](Document& aSubDoc) {
+        return ResetFullscreen(aSubDoc, DispatchFullscreenChangeEvent::Yes);
+      });
     }
   }
   aExit->MayResolvePromise();
@@ -16731,6 +16754,26 @@ Document::ElementReadyCheckResult Document::FullscreenElementReadyCheck(
   }
   if (!nsContentUtils::IsChromeDoc(this) && !IsInFocusedTab(this)) {
     aRequest.Reject("FullscreenDeniedNotFocusedTab");
+    return ElementReadyCheckResult::eErrorPromiseRejected;
+  }
+  const bool isActiveDocumentChainConsistent = ([self = this]() {
+    Document* doc = self;
+    while (doc) {
+      if (!doc->IsCurrentActiveDocument()) {
+        return false;
+      }
+      Element* embedder = doc->GetEmbedderElement();
+      Document* parent = doc->GetInProcessParentDocument();
+      if (!!embedder != !!parent ||
+          (embedder && embedder->GetComposedDoc() != parent)) {
+        return false;
+      }
+      doc = parent;
+    }
+    return true;
+  })();
+  if (!isActiveDocumentChainConsistent) {
+    aRequest.Reject("FullscreenDeniedHidden");
     return ElementReadyCheckResult::eErrorPromiseRejected;
   }
   return ElementReadyCheckResult::eOk;

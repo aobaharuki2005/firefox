@@ -127,21 +127,31 @@ ContentCompositorBridgeParent::AllocPWebRenderBridgeParent(
   RefPtr<CompositorBridgeParent> cbp = nullptr;
   RefPtr<WebRenderBridgeParent> root = nullptr;
 
-  CompositorBridgeParent::WithIndirectLayerTreesLock(
+  bool alreadyHasBridge = CompositorBridgeParent::WithIndirectLayerTreesLock(
       [&](const StaticMonitorAutoLock& aProofOfLock) {
         MOZ_ASSERT(CompositorBridgeParent::GetLayerTreeStateUnderLock(
             layersId, aProofOfLock));
         CompositorBridgeParent::LayerTreeState& state =
             CompositorBridgeParent::EnsureLayerTreeStateUnderLock(layersId,
                                                                   aProofOfLock);
-        MOZ_ASSERT(state.mWrBridge == nullptr);
+        if (state.mWrBridge) {
+          return true;
+        }
         cbp = state.mParent;
         if (cbp) {
           root = CompositorBridgeParent::EnsureLayerTreeStateUnderLock(
                      cbp->RootLayerTreeId(), aProofOfLock)
                      .mWrBridge;
         }
+        return false;
       });
+
+  if (alreadyHasBridge) {
+    NS_ERROR(
+        "Layer tree already has a WebRenderBridgeParent in "
+        "AllocPWebRenderBridgeParent; dropping message...");
+    return nullptr;
+  }
 
   RefPtr<wr::WebRenderAPI> api;
   if (root) {
@@ -161,8 +171,15 @@ ContentCompositorBridgeParent::AllocPWebRenderBridgeParent(
                                                   std::move(error));
   }
 
-  api = api->Clone();
   RefPtr<AsyncImagePipelineManager> holder = root->AsyncImageManager();
+  if (holder->HasLivePipeline(aPipelineId)) {
+    NS_ERROR(
+        "Pipeline already in use in AllocPWebRenderBridgeParent; dropping "
+        "message...");
+    return nullptr;
+  }
+
+  api = api->Clone();
   auto parent = MakeRefPtr<WebRenderBridgeParent>(
       this, aPipelineId, root->CompositorScheduler(), std::move(api),
       std::move(holder), cbp->GetVsyncInterval());
